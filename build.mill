@@ -33,5 +33,8 @@ object `rv32` extends SbtModule {
     override def mvnDeps = Seq(
       mvn"org.scalatest::scalatest::3.2.19"
     )
+    // 禁用测试并行执行
+    // override def testParallelism = false
+
   }
 }
