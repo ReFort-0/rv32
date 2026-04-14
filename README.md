@@ -46,7 +46,7 @@ You should see a whole bunch of output that ends with something like the followi
 [info] All tests passed.
 [success] Total time: 5 s, completed Dec 16, 2020 12:18:44 PM
 ```
-for singal modluar test 
+For single module test 
 ```sh
 ./mill rv32.test.testOnly rv32.XXXSpec
 ```
