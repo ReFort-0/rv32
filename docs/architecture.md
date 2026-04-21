@@ -37,54 +37,51 @@
 ## 目录结构
 
 ```
-src/main/scala/
-├── rv32/
-│   ├── core/           # CPU 核心
-│   │   ├── NeoRV32Core.scala     # 顶层 CPU（根据 PipelineStages 实例化）
-│   │   │
-│   │   ├── stage/               # 流水线各级（统一 Stage 模板）
-│   │   │   ├── Stage.scala      # 参数化流水线级模板
-│   │   │   ├── FetchStage.scala # IF 取指级
-│   │   │   ├── DecodeStage.scala# ID 译码级
-│   │   │   ├── ExecuteStage.scala# EX 执行级
-│   │   │   ├── MemoryStage.scala# MEM 访存级
-│   │   │   └── WritebackStage.scala# WB 写回级
-│   │   │
-│   │   ├── components/          # 功能组件
-│   │   │   ├── CoreReg.scala    # 寄存器文件（x0-x31，UseRVE 时为 x0-x15）
-│   │   │   ├── Decoder.scala    # 指令译码器（RV32I 指令子集，自动适配 E）
-│   │   │   ├── ImmGen.scala     # 立即数生成器（I/S/B/U/J-type）
-│   │   │   ├── Alu.scala        # ALU 运算单元
-│   │   │   ├── MulDivUnit.scala # M 扩展乘除法单元
-│   │   │   ├── HazardUnit.scala # 冒险检测
-│   │   │   └── BypassNet.scala  # 数据旁路
-│   │   │
-│   │   ├── functionalunit/      # 可插拔功能单元（M/F 扩展模式）
-│   │   │   ├── FunctionalUnit.scala# FU 基类
-│   │   │   ├── FUDecoder.scala  # FU 调度器
-│   │   │   ├── ExuBlock.scala   # 执行单元块
-│   │   │   └── ALU.scala        # ALU（add/sub/and/or/xor/slt/sll/srl/sra）
-│   │   │
-│   │   ├── MicroOp.scala        # 通用微操作 Bundle
-│   │   └── CoreBusIF.scala      # CPU→SoC 总线桥
+src/main/scala/rv32/
+├── configs/
+│   ├── Parameters.scala         # 参数定义（UseRVE, UseM, PipelineStages 等）
+│   └── Configurations.scala     # 预定义配置（E1T, IM3UG, I5UT）
+│
+├── core/                        # CPU 核心（模块化设计）
+│   ├── NeoRV32Core.scala        # 顶层 CPU（用统一 Stage 模板构建 1/3/5 级流水线）
 │   │
-│   ├── bus/            # 总线系统
-│   │   ├── SimpleBus.scala      # 极简内存映射总线定义
-│   │   └── BusArbiter.scala     # 总线仲裁器
+│   ├── stage/                   # 流水线各级（统一 Stage 模板实例化）
+│   │   ├── Stage.scala          # 参数化流水线级模板
+│   │   ├── FetchStage.scala     # IF 取指级
+│   │   ├── DecodeStage.scala    # ID 译码级
+│   │   ├── ExecuteStage.scala   # EX 执行级（内含 FU 调度）
+│   │   ├── MemoryStage.scala    # MEM 访存级
+│   │   └── WritebackStage.scala # WB 写回级
 │   │
-│   ├── peripherals/    # 外设
-│   │   ├── UART.scala           # UART 控制器
-│   │   ├── Timer.scala          # 定时器
-│   │   └── GPIO.scala           # GPIO 控制器
+│   ├── functionalunit/          # 可插拔功能单元（M/F 扩展模式）
+│   │   ├── FunctionalUnit.scala # FU 基类 trait
+│   │   ├── FUDecoder.scala      # FU 调度器（opcode → FU 选择）
+│   │   ├── ExuBlock.scala       # 执行单元块（聚合各 FU 输出）
+│   │   ├── ALU.scala            # ALU（add/sub/and/or/xor/slt/sll/srl/sra）
+│   │   ├── MulUnit.scala        # M 扩展乘法（mul/mulh/mulhsu/mulhu）
+│   │   └── DivUnit.scala        # M 扩展除法（div/rem/divu/remu）
 │   │
-│   ├── soc/            # SoC 集成
-│   │   ├── NeoRV32SOC.scala     # 顶层 SoC
-│   │   ├── Demux.scala          # 地址解复用器
-│   │   └── OnChipRAM.scala      # 片上 RAM
-│   │
-│   └── configs/        # 配置
-│       ├── Parameters.scala     # 参数定义
-│       └── Configurations.scala # 预定义配置
+│   └── util/                    # 核心内部工具组件
+│       ├── MicroOp.scala        # 通用微操作 Bundle（跨级传递）
+│       ├── CoreReg.scala        # 寄存器文件（x0-x31，UseRVE 时 x0-x15）
+│       ├── Decoder.scala        # 指令译码器（RV32I 子集，自动适配 E）
+│       ├── ImmGen.scala         # 立即数生成器（I/S/B/U/J-type）
+│       ├── HazardUnit.scala     # 冒险检测（阻塞/冲刷/转发控制）
+│       └── CoreBusIF.scala      # CPU→SoC 总线桥
+│
+└── soc/                         # SoC 外围（极度精简）
+    ├── NeoRV32SoC.scala         # 顶层 SoC（包裹 Core + 总线 + Demux + RAM + 外设）
+    ├── Demux.scala              # 地址解复用器（静态地址路由）
+    ├── OnChipRAM.scala          # 片上 RAM（大小可配置）
+    │
+    ├── bus/                     # 极简总线（非 AXI/Wishbone）
+    │   ├── SimpleBus.scala      # 总线定义（addr/wdata/rdata/wen/ren/valid）
+    │   └── BusArbiter.scala     # 总线仲裁（单 master 可简化）
+    │
+    └── peripherals/             # 外设（按需实例化，参数控制）
+        ├── UART.scala           # UART（TX/RX FIFO，可配置波特率）
+        ├── Timer.scala          # 64-bit 计数器 + 比较中断
+        └── GPIO.scala           # 32-bit GPIO（方向+数据寄存器）
 ```
 
 ---
@@ -124,49 +121,77 @@ abstract class SOCConfig extends Parameters {
 
 ### 2. CPU 核心架构 (NeoRV32Core)
 
-#### 2.1 流水线结构（参数化实例化）
+#### 2.1 统一 Stage 模板
 
-```scala
-class NeoRV32Core(implicit p: Parameters) extends Module {
-  val io = IO(new Bundle {
-    val bus = new SimpleBus  // 连接 SoC
-    val interrupt = Input(Bool()) // 中断请求（引出至顶层，CPU 不处理）
-  })
-  
-  // 根据 PipelineStages 参数实例化不同流水线
-  p(PipelineStages) match {
-    case 1 => new SingleCycleCore  // 单周期（IF/ID/EX/MEM/WB 合一）
-    case 3 => new ThreeStageCore   // 3级（Fetch | Decode/Execute | Memory/Writeback）
-    case 5 => new FiveStageCore    // 5级（IF | ID | EX | MEM | WB）
-  }
-}
-```
-
-**统一 Stage 模板**：
+所有流水线级由**同一套参数化 `Stage` 模板**实例化：
 
 ```scala
 class Stage(stageType: StageType)(implicit p: Parameters) extends Module {
   val io = IO(new Bundle {
-    val in = Flipped(Decoupled(new MicroOp))   // 输入级间寄存器
-    val out = Decoupled(new MicroOp)           // 输出到下一级
-    val stall = Input(Bool())                   // 流水线暂停
-    val flush = Input(Bool())                   // 流水线冲刷
+    val in = Flipped(Decoupled(new MicroOp))   // 输入：级间寄存器
+    val out = Decoupled(new MicroOp)           // 输出：到下一级
+    val stall = Input(Bool())                  // 流水线暂停
+    val flush = Input(Bool())                  // 流水线冲刷
   })
+  
   // 根据 stageType 实现具体逻辑
+  // IF/ID/EX/MEM/WB 共用同一套 Stage 框架
 }
 ```
 
-#### 2.2 流水线级功能
+#### 2.2 流水线构建（参数化实例化）
 
-| 级 | 功能 | 关键操作 | 实例模块 |
-|----|------|----------|----------|
-| IF | 取指 | PC 生成、指令存储器访问 | `FetchStage.scala` |
-| ID | 译码 | 指令解码、寄存器读取、冒险检测 | `DecodeStage.scala` |
-| EX | 执行 | ALU/FU 运算、分支判断、地址计算 | `ExecuteStage.scala` |
-| MEM | 访存 | 数据存储器访问、Load/Store | `MemoryStage.scala` |
-| WB | 写回 | 结果写回寄存器 | `WritebackStage.scala` |
+`NeoRV32Core` 根据 `PipelineStages` 参数，用同一套 `Stage` 模板组装不同流水线：
 
-#### 2.3 功能组件 (components/)
+```scala
+class NeoRV32Core(implicit p: Parameters) extends Module {
+  val io = IO(new Bundle {
+    val bus = new SimpleBus
+    val interrupt = Input(Bool()) // 引出至顶层，CPU 不处理
+  })
+  
+  val pipeline = p(PipelineStages) match {
+    case 1 => Seq(
+      Module(new Stage(StageType.COMBINED))  // IF+ID+EX+MEM+WB 合一
+    )
+    case 3 => Seq(
+      Module(new Stage(StageType.FETCH)),           // IF
+      Module(new Stage(StageType.DECODE_EXEC)),     // ID+EX
+      Module(new Stage(StageType.MEM_WRITE))        // MEM+WB
+    )
+    case 5 => Seq(
+      Module(new Stage(StageType.FETCH)),     // IF
+      Module(new Stage(StageType.DECODE)),    // ID
+      Module(new Stage(StageType.EXECUTE)),   // EX
+      Module(new Stage(StageType.MEMORY)),    // MEM
+      Module(new Stage(StageType.WRITEBACK))  // WB
+    )
+  }
+  
+  // 级间寄存器连接 + MicroOp 传递
+  connectStages(pipeline)
+}
+```
+
+#### 2.3 通用微操作 (MicroOp)
+
+每个 `Stage` 接收/输出统一的 `MicroOp` Bundle：
+
+```scala
+class MicroOp(implicit p: Parameters) extends Bundle {
+  val valid = Bool()
+  val pc = UInt(32.W)
+  val inst = UInt(32.W)
+  val rd = UInt(5.W)
+  val rs1 = UInt(5.W)
+  val rs2 = UInt(5.W)
+  val imm = UInt(32.W)
+  val ctrl = new ControlSignals    // ALUop/memRead/memWrite/branch 等
+  val data = new DataPathSignals   // 寄存器值/ALU结果/内存数据等
+}
+```
+
+#### 2.4 功能组件 (util/)
 
 **寄存器文件** (`CoreReg.scala`)：
 ```scala
@@ -405,16 +430,14 @@ val config = Parameters.empty.alter((site, here, up) => {
 ```
 
 ---
-F
+
 ## 交付物清单
 
 | 路径 | 内容 |
 |------|------|
-| `src/main/scala/core/` | 参数化 CPU 核心 |
-| `src/main/scala/bus/` | 轻量总线系统 |
-| `src/main/scala/peripherals/` | UART/Timer/GPIO 外设 |
-| `src/main/scala/soc/` | SoC 集成 (NeoRV32SOC, Demux, RAM) |
-| `src/main/scala/configs/` | 预定义配置对象 |
+| `src/main/scala/rv32/core/` | 参数化 CPU 核心 |
+| `src/main/scala/rv32/soc/` | SoC 集成 (总线、Demux、RAM、外设) |
+| `src/main/scala/rv32/configs/` | 预定义配置对象 |
 | `docs/architecture.md` | 本文档 |
 | `README.md` | 快速入门、配置示例、综合结果 |
 | `scripts/generate-configs.scala` | 自动化生成脚本 |
