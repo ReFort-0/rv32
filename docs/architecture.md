@@ -65,6 +65,7 @@ src/main/scala/rv32/
 │       ├── MicroOp.scala        # 通用微操作 Bundle（跨级传递）
 │       ├── CoreReg.scala        # 寄存器文件（x0-x31，UseRVE 时 x0-x15）
 │       ├── Decoder.scala        # 指令译码器（RV32I 子集，自动适配 E）
+│       ├── pcReg.scala          # PC寄存器
 │       ├── ImmGen.scala         # 立即数生成器（I/S/B/U/J-type）
 │       ├── HazardUnit.scala     # 冒险检测（阻塞/冲刷/转发控制）
 │       └── CoreBusIF.scala      # CPU→SoC 总线桥
