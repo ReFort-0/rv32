@@ -2,22 +2,24 @@ package rv32.core.util
 
 import chisel3._
 import chisel3.util._
-import rv32.configs.CoreConfig
+// Directionless bundle - directions assigned at instantiation
 
-// ============================================================
-// SimpleMemIO - Memory interface used by pipeline stages
-// ============================================================
+class SimpleMemReq extends Bundle {
+  val valid = Bool()
+  val addr  = UInt(32.W)
+  val wdata = UInt(32.W)
+  val wen   = Bool()
+  val mask  = UInt(4.W)
+}
 
-class SimpleMemIO(implicit conf: CoreConfig) extends Bundle {
-  val req = new Bundle {
-    val valid = Output(Bool())
-    val addr  = Output(UInt(conf.xlen.W))
-    val wdata = Output(UInt(conf.xlen.W))
-    val wen   = Output(Bool())
-    val mask  = Output(UInt(4.W))
-  }
-  val resp = Flipped(new Bundle {
-    val valid = Input(Bool())
-    val rdata = Input(UInt(conf.xlen.W))
-  })
+class SimpleMemResp extends Bundle {
+  val valid = Bool()
+  val rdata = UInt(32.W)
+  val error = Bool()
+}
+
+// Directionless bundle
+class SimpleMemIO extends Bundle {
+  val req = new SimpleMemReq()
+  val resp = new SimpleMemResp()
 }

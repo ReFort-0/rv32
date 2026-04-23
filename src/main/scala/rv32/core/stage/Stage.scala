@@ -31,7 +31,10 @@ class StageIO(implicit conf: CoreConfig) extends Bundle {
   val stall = Input(Bool())
   val flush = Input(Bool())
   // Memory interface (for stages that need it)
-  val dmem = if (conf.useM) Some(new SimpleMemIO()) else None
+  val dmem = if (conf.useM) Some(new Bundle {
+    val req = Output(new SimpleMemReq())
+    val resp = Input(new SimpleMemResp())
+  }) else None
 }
 
 // ============================================================
@@ -40,7 +43,7 @@ class StageIO(implicit conf: CoreConfig) extends Bundle {
 // ============================================================
 
 // SimpleMemIO import from util package
-import rv32.core.util.SimpleMemIO
+import rv32.core.util.{SimpleMemReq, SimpleMemResp, SimpleMemIO}
 
 // ============================================================
 // Fetch Stage - Instruction Fetch
@@ -48,9 +51,11 @@ import rv32.core.util.SimpleMemIO
 
 class FetchStage(implicit conf: CoreConfig) extends Module {
   val io = IO(new Bundle {
-    // Instruction memory interface
-    val imem = new SimpleMemIO()
-    // PC output (to pipeline)
+    // Instruction memory interface - Stage is initiator
+    val imem = new Bundle {
+      val req = Output(new SimpleMemReq())
+      val resp = Input(new SimpleMemResp())
+    }
     val pc_out = Output(UInt(conf.xlen.W))
     val inst_out = Output(UInt(32.W))
     val valid_out = Output(Bool())
@@ -67,7 +72,7 @@ class FetchStage(implicit conf: CoreConfig) extends Module {
   val PC_JALR = 2.U(2.W)
 
   // PC register
-  val pc = RegInit(0x80000000.U(conf.xlen.W))
+  val pc = RegInit(0x80000000L.U(conf.xlen.W))
 
   // Next PC logic
   val pc_plus4 = pc + 4.U
@@ -89,7 +94,7 @@ class FetchStage(implicit conf: CoreConfig) extends Module {
   io.imem.req.mask := 0.U
 
   // Outputs (registered)
-  val pc_reg = RegInit(0x80000000.U(conf.xlen.W))
+  val pc_reg = RegInit(0x80000000L.U(conf.xlen.W))
   val inst_reg = RegInit(Constants.BUBBLE)
   val valid_reg = RegInit(false.B)
 
@@ -264,8 +269,11 @@ class MemoryStage(implicit conf: CoreConfig) extends Module {
     val stall = Input(Bool())
     val flush = Input(Bool())
 
-    // Data memory interface
-    val dmem = new SimpleMemIO()
+    // Data memory interface - Stage is initiator
+    val dmem = new Bundle {
+      val req = Output(new SimpleMemReq())
+      val resp = Input(new SimpleMemResp())
+    }
   })
 
   val mem_fcn_load = io.in.bits.ctrl.mem_fcn === Constants.M_XRD

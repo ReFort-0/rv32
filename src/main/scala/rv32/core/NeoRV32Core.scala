@@ -13,8 +13,17 @@ import rv32.core.functionalunit._
 
 class NeoRV32CoreIO(implicit config: NeoRV32Config) extends Bundle {
   val conf = config.core
-  val imem = new SimpleMemIO()(conf)
-  val dmem = new SimpleMemIO()(conf)
+  // Core is requester:
+  // - req: Output (core drives request to memory)
+  // - resp: Input (core receives response from memory)
+  val imem = new Bundle {
+    val req = Output(new SimpleMemReq())
+    val resp = Input(new SimpleMemResp())
+  }
+  val dmem = new Bundle {
+    val req = Output(new SimpleMemReq())
+    val resp = Input(new SimpleMemResp())
+  }
   val dbg = new Bundle {
     val pc = Output(UInt(conf.xlen.W))
   }
@@ -67,13 +76,24 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
   // Memory Interface Connections
   // ============================================================
 
-  fetch.io.imem.req <> io.imem.req
-  io.imem.resp.rdata := DontCare
-  io.imem.resp.valid := true.B
+  // CoreIO: Flipped(SimpleMemIO) - req=Input, resp=Output (from SoC to core)
+  // Stages: SimpleMemIO - req=Output, resp=Input (from core to SoC)
 
-  memory.io.dmem.req <> io.dmem.req
-  io.dmem.resp.rdata := DontCare
-  io.dmem.resp.valid := true.B
+  // imem connections (SoC provides data to core)
+  io.imem.req.addr := fetch.io.imem.req.addr
+  io.imem.req.wdata := fetch.io.imem.req.wdata
+  io.imem.req.wen := fetch.io.imem.req.wen
+  io.imem.req.mask := fetch.io.imem.req.mask
+  io.imem.req.valid := fetch.io.imem.req.valid
+  fetch.io.imem.resp <> io.imem.resp
+
+  // dmem connections
+  io.dmem.req.addr := memory.io.dmem.req.addr
+  io.dmem.req.wdata := memory.io.dmem.req.wdata
+  io.dmem.req.wen := memory.io.dmem.req.wen
+  io.dmem.req.mask := memory.io.dmem.req.mask
+  io.dmem.req.valid := memory.io.dmem.req.valid
+  memory.io.dmem.resp <> io.dmem.resp
 
   // ============================================================
   // Debug Interface
@@ -88,7 +108,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
   def connect1Stage(): Unit = {
     // Single cycle - all stages operate combinatorially
 
-    val pc = RegInit(0x80000000.U(conf.xlen.W))
+    val pc = RegInit(0x80000000L.U(conf.xlen.W))
 
     // Fetch stage
     val jalr_target = (decode.io.rf.rs1_data + decode.io.imm) & ~1.U(conf.xlen.W)
@@ -123,6 +143,10 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     execute.io.imm := decode.io.imm
     execute.io.stall := false.B
     execute.io.flush := false.B
+    if (conf.useM) { execute.io.muldiv.get.busy := false.B }
+    if (conf.useM) {
+      execute.io.muldiv.get.busy := false.B  // No MulDiv for now
+    }
 
     // Memory
     memory.io.in.valid := execute.io.out.valid
@@ -212,6 +236,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     execute.io.imm := id_ex_uop.imm
     execute.io.stall := stall
     execute.io.flush := false.B
+    if (conf.useM) { execute.io.muldiv.get.busy := false.B }
 
     // EX/MEM register
     val ex_mem_uop = RegInit(MicroOp.bubble)
@@ -304,6 +329,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     execute.io.imm := id_ex_uop.imm
     execute.io.stall := stall
     execute.io.flush := false.B
+    if (conf.useM) { execute.io.muldiv.get.busy := false.B }
 
     // EX/MEM register
     val ex_mem_uop = RegInit(MicroOp.bubble)
