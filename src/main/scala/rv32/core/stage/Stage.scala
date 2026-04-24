@@ -65,25 +65,39 @@ class FetchStage(implicit conf: CoreConfig) extends Module {
     val br_taken = Input(Bool())
     val stall = Input(Bool())
     val flush = Input(Bool())
+    // Reset PC (configurable, default 0x80000000)
+    val reset_pc = Input(UInt(conf.xlen.W))
   })
 
   val PC_PLUS4 = 0.U(2.W)
   val PC_BRJMP = 1.U(2.W)
   val PC_JALR = 2.U(2.W)
 
-  // PC register
-  val pc = RegInit(0x80000000L.U(conf.xlen.W))
+  // Default reset PC value
+  val defaultResetPC = 0x80000000L.U(conf.xlen.W)
+  val resetPC = Mux(io.reset_pc =/= 0.U, io.reset_pc, defaultResetPC)
 
-  // Next PC logic
+  // PC register (initialized from reset_pc parameter)
+  val pc = RegInit(resetPC)
+
+  // Next PC calculation
   val pc_plus4 = pc + 4.U
   val next_pc = MuxCase(pc_plus4, Array(
     (io.pc_sel === PC_BRJMP && io.br_taken) -> io.pc_in,
     (io.pc_sel === PC_JALR) -> Cat(io.pc_in(conf.xlen - 1, 1), 0.U(1.W))
   ))
 
-  // Update PC when not stalled
+  // Outputs (registered)
+  val pc_reg = RegInit(resetPC)
+  val inst_reg = RegInit(Constants.BUBBLE)
+  val valid_reg = RegInit(false.B)
+
+  // Update PC and outputs when not stalled
   when(!io.stall) {
     pc := next_pc
+    pc_reg := next_pc
+    inst_reg := io.imem.resp.rdata
+    valid_reg := !io.flush && io.imem.resp.valid
   }
 
   // Instruction memory request
@@ -92,17 +106,6 @@ class FetchStage(implicit conf: CoreConfig) extends Module {
   io.imem.req.wen := false.B
   io.imem.req.wdata := 0.U
   io.imem.req.mask := 0.U
-
-  // Outputs (registered)
-  val pc_reg = RegInit(0x80000000L.U(conf.xlen.W))
-  val inst_reg = RegInit(Constants.BUBBLE)
-  val valid_reg = RegInit(false.B)
-
-  when(!io.stall) {
-    pc_reg := next_pc
-    inst_reg := io.imem.resp.rdata
-    valid_reg := !io.flush && io.imem.resp.valid
-  }
 
   io.pc_out := pc_reg
   io.inst_out := inst_reg

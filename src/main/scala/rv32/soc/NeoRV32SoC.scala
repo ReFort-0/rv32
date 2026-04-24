@@ -22,6 +22,8 @@ class NeoRV32SoC(config: NeoRV32Config) extends Module {
     val gpio_pins = Output(UInt(32.W))
     val uart_tx = Output(Bool())
     val debug_pc = Output(UInt(32.W))  // Expose PC for verification
+    // Reset PC input for ACT4 testing (default 0x80000000)
+    val resetPc = Input(UInt(32.W))
   })
 
   // ============================================================
@@ -29,6 +31,9 @@ class NeoRV32SoC(config: NeoRV32Config) extends Module {
   // ============================================================
 
   val core = Module(new NeoRV32Core(config))
+
+  // Connect reset PC (default 0x80000000 if not specified)
+  core.io.resetPc := Mux(io.resetPc =/= 0.U, io.resetPc, 0x80000000L.U(32.W))
 
   // ============================================================
   // Bus Infrastructure

@@ -117,8 +117,10 @@ class Timer(implicit conf: SoCConfig) extends Module {
   io.bus.resp.valid := io.bus.req.ren || io.bus.req.wen
   io.bus.resp.error := false.B
 
-  // Increment counter
-  counter_low := counter_low + 1.U
+  // Increment counter only when not being written
+  when(!io.bus.req.wen) {
+    counter_low := counter_low + 1.U
+  }
 
   // Compare interrupt
   val match_int = (counter_low === compare_low) && (counter_high === compare_high)

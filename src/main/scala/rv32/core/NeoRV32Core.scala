@@ -27,6 +27,8 @@ class NeoRV32CoreIO(implicit config: NeoRV32Config) extends Bundle {
   val dbg = new Bundle {
     val pc = Output(UInt(conf.xlen.W))
   }
+  // Reset PC input for ACT4 testing (default 0x80000000)
+  val resetPc = Input(UInt(conf.xlen.W))
 }
 
 // ============================================================
@@ -119,6 +121,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     fetch.io.br_taken := execute.io.br_taken
     fetch.io.stall := false.B
     fetch.io.flush := false.B
+    fetch.io.reset_pc := io.resetPc
 
     // Fetch produces uop
     val uop = MicroOp(fetch.io.inst_out, fetch.io.pc_out, fetch.io.valid_out)
@@ -198,6 +201,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     fetch.io.br_taken := execute.io.br_taken
     fetch.io.stall := stall
     fetch.io.flush := flush_if
+    fetch.io.reset_pc := io.resetPc
 
     // Decode stage
     decode.io.in.valid := if_id_uop.valid
@@ -292,6 +296,7 @@ class NeoRV32Core(config: NeoRV32Config) extends Module {
     fetch.io.br_taken := execute.io.br_taken
     fetch.io.stall := stall
     fetch.io.flush := flush_if
+    fetch.io.reset_pc := io.resetPc
 
     // Decode stage
     decode.io.in.valid := if_id_uop.valid

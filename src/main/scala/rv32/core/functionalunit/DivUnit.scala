@@ -27,8 +27,6 @@ class DivUnit(implicit conf: CoreConfig) extends Module {
 
   val quotient = Reg(UInt(conf.xlen.W))
   val remainder = Reg(UInt(conf.xlen.W))
-  val divisor = Reg(UInt((conf.xlen + 1).W))
-  val dividend = Reg(UInt((conf.xlen * 2).W))
   val result_valid = RegInit(false.B)
   val is_signed = Reg(Bool())
 
@@ -41,31 +39,14 @@ class DivUnit(implicit conf: CoreConfig) extends Module {
       result_valid := false.B
       when(io.in_valid) {
         is_signed := div_op
-        // Handle signed/unsigned for dividend
         val a_pos = Mux(io.a(conf.xlen - 1) && div_op, (~io.a).asUInt, io.a)
         val b_pos = Mux(io.b(conf.xlen - 1) && div_op, (~io.b).asUInt, io.b)
-
-        dividend := Cat(0.U(conf.xlen.W), a_pos)
-        divisor := Cat(0.U(1.W), b_pos)
-        quotient := 0.U
-        remainder := 0.U
+        quotient := a_pos / b_pos
+        remainder := a_pos % b_pos
         state := s_divide
       }
     }
     is(s_divide) {
-      // Simple single-cycle division for now
-      // In real implementation, this would be iterative
-      val is_zero = io.b === 0.U
-      val neg_a = io.a(conf.xlen - 1) && div_op
-      val neg_b = io.b(conf.xlen - 1) && div_op
-
-      // Unsigned division result
-      val u_div = dividend(conf.xlen * 2 - 1, conf.xlen) / divisor(conf.xlen, 0)
-      val u_rem = dividend(conf.xlen * 2 - 1, conf.xlen) % divisor(conf.xlen, 0)
-
-      quotient := u_div
-      remainder := u_rem
-
       result_valid := true.B
       state := s_idle
     }
