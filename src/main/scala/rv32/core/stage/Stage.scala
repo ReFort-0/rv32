@@ -44,6 +44,7 @@ class StageIO(implicit conf: CoreConfig) extends Bundle {
 
 // SimpleMemIO import from util package
 import rv32.core.util.{SimpleMemReq, SimpleMemResp, SimpleMemIO}
+import rv32.core.functionalunit.ExuBlock
 
 // ============================================================
 // Fetch Stage - Instruction Fetch
@@ -74,7 +75,7 @@ class FetchStage(implicit conf: CoreConfig) extends Module {
   val PC_JALR = 2.U(2.W)
 
   // Default reset PC value
-  val defaultResetPC = 0x80000000L.U(conf.xlen.W)
+  val defaultResetPC = 0x00000000L.U(conf.xlen.W)
   val resetPC = Mux(io.reset_pc =/= 0.U, io.reset_pc, defaultResetPC)
 
   // PC register (initialized from reset_pc parameter)
@@ -190,13 +191,13 @@ class ExecuteStage(implicit conf: CoreConfig) extends Module {
     val br_taken = Output(Bool())
     val pc_sel = Output(UInt(2.W))
 
-    // MulDiv interface (if enabled)
-    val muldiv = if (conf.useM) Some(new Bundle {
-      val busy = Input(Bool())
-    }) else None
+    // MulDiv busy signal output (only valid when useM=true)
+    val muldiv_busy = if (conf.useM) Some(Output(Bool())) else None
   })
 
+  // Conditionally instantiate execution unit based on M extension
   val alu = Module(new ALU())
+  val exu = if (conf.useM) Some(Module(new ExuBlock())) else None
 
   // Operand selection
   val op1 = MuxCase(io.rs1_data, Array(
@@ -209,12 +210,27 @@ class ExecuteStage(implicit conf: CoreConfig) extends Module {
     (io.in.bits.ctrl.op2_sel === Constants.OP2_4) -> 4.U
   ))
 
-  // ALU execution
-  alu.io.op := io.in.bits.ctrl.alu_op
-  alu.io.in1 := op1
-  alu.io.in2 := op2
-
-  val alu_result = alu.io.out
+  // Execute
+  // When useM=true: use ExuBlock (ALU + MulDiv)
+  // When useM=false: use ALU only (smaller area)
+  val muldiv_busy_internal = Wire(Bool())
+  val alu_result = if (conf.useM) {
+    exu.get.io.alu_op := io.in.bits.ctrl.alu_op
+    exu.get.io.muldiv_op := io.in.bits.ctrl.muldiv_op
+    exu.get.io.in1 := op1
+    exu.get.io.in2 := op2
+    exu.get.io.use_muldiv := io.in.bits.ctrl.fu_sel === Constants.FU_MULDIV
+    muldiv_busy_internal := exu.get.io.busy
+    io.muldiv_busy.get := muldiv_busy_internal
+    exu.get.io.out
+  } else {
+    // Only ALU ops are valid when M extension disabled
+    alu.io.op := io.in.bits.ctrl.alu_op
+    alu.io.in1 := op1
+    alu.io.in2 := op2
+    muldiv_busy_internal := false.B  // Always false when M disabled
+    alu.io.out
+  }
 
   // Branch condition check
   val rs1_eq_rs2 = io.rs1_data === io.rs2_data

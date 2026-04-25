@@ -36,14 +36,13 @@ class MulDivUnit(implicit conf: CoreConfig) extends Module {
   val is_mulh = io.op(1)
   val is_unsigned_second = io.op(0)
 
-  // Proper multiplication with type safety
-  val product_s_s = io.a.asSInt * io.b.asSInt
-  val product_s_u = io.a.asSInt * io.b.asUInt
-  val product_u_u = io.a.asUInt * io.b.asUInt
+  val product_s_s = (io.a.asSInt * io.b.asSInt).asUInt
+  val product_s_u = (io.a.asSInt * io.b.asUInt).asUInt
+  val product_u_u = (io.a.asUInt * io.b.asUInt).asUInt
 
   val product = Mux(is_unsigned_second,
-    Mux(is_mulh, product_s_u, product_u_u).asUInt,
-    product_s_s.asUInt
+    Mux(is_mulh, product_s_u, product_u_u),
+    product_s_s
   )
 
   // Division
@@ -98,6 +97,7 @@ class ExuBlock(implicit conf: CoreConfig) extends Module {
     val in2 = Input(UInt(conf.xlen.W))
     val use_muldiv = Input(Bool())
     val out = Output(UInt(conf.xlen.W))
+    val busy = Output(Bool())  // MulDivUnit busy signal passthrough
   })
 
   val alu = Module(new ALU())
@@ -112,4 +112,5 @@ class ExuBlock(implicit conf: CoreConfig) extends Module {
   muldiv.io.in_valid := io.use_muldiv
 
   io.out := Mux(io.use_muldiv, muldiv.io.result, alu.io.out)
+  io.busy := muldiv.io.busy
 }

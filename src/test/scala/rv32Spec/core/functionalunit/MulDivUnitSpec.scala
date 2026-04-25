@@ -4,19 +4,14 @@ import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import rv32.core.functionalunit.MulUnit
+import rv32.core.functionalunit.MulDivUnit
 import rv32.configs.CoreConfig
 
-class MulUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
-  implicit val conf: CoreConfig = new CoreConfig
+class MulDivUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
+  implicit val conf: CoreConfig = new CoreConfig(useM = true)
 
-  "MulUnit" - {
-    def mulOp(isMulh: Boolean, isUnsignedSecond: Boolean): UInt = {
-      val v = (if (isUnsignedSecond) 1 else 0) | (if (isMulh) 2 else 0)
-      v.U(4.W)
-    }
-
-    def waitForResult(dut: MulUnit, expected: Long): Unit = {
+  "MulDivUnit" - {
+    def waitForResult(dut: MulDivUnit, expected: Long): Unit = {
       dut.io.in_valid.poke(true.B)
       var done = false
       var cycles = 0
@@ -25,13 +20,13 @@ class MulUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
         cycles += 1
         done = dut.io.out_valid.peekValue().asBigInt == 1
       }
-      require(done, s"MulUnit timeout after ${cycles} cycles")
+      require(done, s"MulDivUnit timeout after ${cycles} cycles")
       dut.io.result.expect(expected.U)
     }
 
     "should perform MUL (signed * signed, low bits)" in {
-      simulate(new MulUnit) { dut =>
-        dut.io.op.poke(mulOp(false, false))
+      simulate(new MulDivUnit) { dut =>
+        dut.io.op.poke(0.U) // MUL
         dut.io.a.poke(16.U)
         dut.io.b.poke(4.U)
         waitForResult(dut, 64)
@@ -39,8 +34,8 @@ class MulUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
     }
 
     "should perform MUL with large operands" in {
-      simulate(new MulUnit) { dut =>
-        dut.io.op.poke(mulOp(false, false))
+      simulate(new MulDivUnit) { dut =>
+        dut.io.op.poke(0.U) // MUL
         dut.io.a.poke(256.U)
         dut.io.b.poke(256.U)
         waitForResult(dut, 65536)
@@ -48,8 +43,8 @@ class MulUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
     }
 
     "should handle zero operands" in {
-      simulate(new MulUnit) { dut =>
-        dut.io.op.poke(mulOp(false, false))
+      simulate(new MulDivUnit) { dut =>
+        dut.io.op.poke(0.U) // MUL
         dut.io.a.poke(0.U)
         dut.io.b.poke(123.U)
         waitForResult(dut, 0)
@@ -57,8 +52,8 @@ class MulUnitSpec extends AnyFreeSpec with Matchers with ChiselSim {
     }
 
     "should chain multiple multiplications" in {
-      simulate(new MulUnit) { dut =>
-        dut.io.op.poke(mulOp(false, false))
+      simulate(new MulDivUnit) { dut =>
+        dut.io.op.poke(0.U) // MUL
         dut.io.a.poke(2.U)
         dut.io.b.poke(3.U)
         waitForResult(dut, 6)
