@@ -12,7 +12,7 @@ case class CoreConfig(
   xlen: Int = 32,
   useRV32E: Boolean = false,
   useM: Boolean = false,
-  pipelineStages: Int = 3
+  pipelineStages: Int = 1  // P0: single-cycle as default
 ) {
   require(pipelineStages == 1 || pipelineStages == 3 || pipelineStages == 5,
     "Pipeline stages must be 1, 3, or 5")

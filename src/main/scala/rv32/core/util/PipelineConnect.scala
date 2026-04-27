@@ -2,6 +2,7 @@ package rv32.core.util
 
 import chisel3._
 import chisel3.util._
+import rv32.configs.CoreConfig
 
 // ============================================================
 // Pipeline Connect - Standardized pipeline register handling
