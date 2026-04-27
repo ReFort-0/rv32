@@ -7,6 +7,7 @@ import rv32.configs.CoreConfig
 // ============================================================
 // Register File - x0-x31 (or x0-x15 for RV32E)
 // Chisel uses Mem for inference of regfile
+// Address width is always 5 bits (RV32E only uses lower 16 addresses)
 // ============================================================
 
 class RegisterFileIO(implicit conf: CoreConfig) extends Bundle {
@@ -21,12 +22,13 @@ class RegisterFileIO(implicit conf: CoreConfig) extends Bundle {
 }
 
 class RegisterFile(implicit conf: CoreConfig) extends Module {
-  val io = IO(new RegisterFileIO())
+  val io = IO(new RegisterFileIO)
 
   // Memory-based regfile - Chisel infers proper regfile from this
   val rf = Mem(conf.numRegs, UInt(conf.xlen.W))
 
   // Read ports - async read
+  // x0 is always 0
   io.rs1_data := Mux(io.rs1_addr === 0.U, 0.U, rf(io.rs1_addr))
   io.rs2_data := Mux(io.rs2_addr === 0.U, 0.U, rf(io.rs2_addr))
 

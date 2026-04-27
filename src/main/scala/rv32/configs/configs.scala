@@ -19,11 +19,13 @@ case class CoreConfig(
   require(xlen == 32, "Only RV32 is supported")
 
   def numRegs: Int = if (useRV32E) 16 else 32
+  // def regAddrWidth: Int = if (useRV32E) 4 else 5
+  //(RV32E和RV32I的GPR都是5位地址)
 }
 
 case class SoCConfig(
   enableUART: Boolean = false,
-  enableTimer: Boolean = true,
+  enableTimer: Boolean = false,
   enableGPIO: Boolean = false,
   onChipRAMSize: Int = 4 * 1024
 )

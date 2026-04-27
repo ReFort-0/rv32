@@ -11,13 +11,13 @@ import rv32.configs.CoreConfig
 
 class DecoderIO extends Bundle {
   val inst = Input(UInt(32.W))
-  val ctrl = Output(new ControlSignals())
+  val ctrl = Output(new ControlSignals)
 }
 
-class Decoder(implicit conf: CoreConfig) extends Module {
+class Decoder(implicit config: CoreConfig) extends Module {
   import Constants._
 
-  val io = IO(new DecoderIO())
+  val io = IO(new DecoderIO)
 
   val defaultCtrl = List(
     N,          // valid
@@ -100,20 +100,17 @@ class Decoder(implicit conf: CoreConfig) extends Module {
 
   val cs = ListLookup(io.inst, defaultCtrl, decodeTable)
 
-  val ctrl = Wire(new ControlSignals())
-  ctrl.valid      := cs(0).asBool
-  ctrl.pc_sel     := cs(1)
+  val ctrl = Wire(new ControlSignals)
   ctrl.op1_sel    := cs(2)
   ctrl.op2_sel    := cs(3)
-  ctrl.imm_sel    := cs(4)
   ctrl.alu_op     := cs(5)
-  ctrl.fu_sel     := cs(6)
-  ctrl.br_type    := cs(7)
+  ctrl.branch_type:= cs(7)
+  ctrl.mem_en     := cs(10) =/= M_X
+  ctrl.mem_rw     := cs(10) === M_XWR
+  ctrl.mem_type   := cs(11)
   ctrl.wb_sel     := cs(8)
-  ctrl.rf_wen     := cs(9).asBool
-  ctrl.mem_fcn    := cs(10)
-  ctrl.mem_typ    := cs(11)
-  ctrl.muldiv_op  := Cat(io.inst(13, 12), io.inst(14), io.inst(25)) // funct3 + bit30 for muldiv
+  ctrl.reg_write  := cs(9)
+  ctrl.imm_type   := cs(4)
 
   io.ctrl := ctrl
 }

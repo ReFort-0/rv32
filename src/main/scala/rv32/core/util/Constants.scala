@@ -4,7 +4,8 @@ import chisel3._
 import chisel3.util._
 
 // ============================================================
-// RISC-V Instruction Constants
+// RISC-V Instruction Constants - Instruction Encodings Only
+// Control signals moved to ControlSignals Bundle in MicroOp.scala
 // ============================================================
 
 trait Instructions {
@@ -73,32 +74,33 @@ trait Instructions {
 
 // ============================================================
 // Control Signal Constants
+// Used by Decoder, Stage modules, and PipelineConnect
 // ============================================================
 
-trait ControlConstants {
+object Constants extends Instructions {
   // Boolean values for decode table
   val Y = true.B
   val N = false.B
 
-  // PC Select
+  // PC Select - Used by ExecuteStage and NeoRV32Core
   val PC_PLUS4 = 0.U(2.W)
   val PC_BRJMP = 1.U(2.W)
   val PC_JALR  = 2.U(2.W)
 
-  // Operand A Select
+  // Operand A Select - Used by ExecuteStage
   val OP1_X   = 0.U(2.W)
   val OP1_RS1 = 1.U(2.W)
   val OP1_PC  = 2.U(2.W)
   val OP1_X0  = 3.U(2.W)
 
-  // Operand B Select
+  // Operand B Select - Used by ExecuteStage
   val OP2_X   = 0.U(3.W)
   val OP2_RS2 = 1.U(3.W)
   val OP2_IMM = 2.U(3.W)
   val OP2_4   = 3.U(3.W)
   val OP2_PC  = 4.U(3.W)
 
-  // Immediate Type
+  // Immediate Type - Used by ImmGen and Decoder
   val IMM_X   = 0.U(3.W)
   val IMM_I   = 1.U(3.W)
   val IMM_S   = 2.U(3.W)
@@ -107,7 +109,7 @@ trait ControlConstants {
   val IMM_J   = 5.U(3.W)
   val IMM_Z   = 6.U(3.W)
 
-  // ALU Operations
+  // ALU Operations - Used by ALU and Decoder
   val ALU_ADD  = 0.U(4.W)
   val ALU_SUB  = 1.U(4.W)
   val ALU_AND  = 2.U(4.W)
@@ -121,7 +123,7 @@ trait ControlConstants {
   val ALU_COPY1 = 10.U(4.W)
   val ALU_X    = 15.U(4.W)
 
-  // Branch Type
+  // Branch Type - Used by ExecuteStage and Decoder
   val BR_N   = 0.U(3.W)
   val BR_EQ  = 1.U(3.W)
   val BR_NE  = 2.U(3.W)
@@ -131,18 +133,18 @@ trait ControlConstants {
   val BR_GEU = 6.U(3.W)
   val BR_J   = 7.U(3.W)
 
-  // Writeback Select
+  // Writeback Select - Used by WritebackStage and Decoder
   val WB_X    = 0.U(2.W)
   val WB_ALU  = 1.U(2.W)
   val WB_MEM  = 2.U(2.W)
   val WB_PC4  = 3.U(2.W)
 
-  // Memory Function
+  // Memory Function - Used by MemoryStage and Decoder
   val M_X    = 0.U(3.W)
   val M_XRD  = 1.U(3.W)
   val M_XWR  = 2.U(3.W)
 
-  // Memory Type
+  // Memory Type - Used by MemoryStage and Decoder
   val MT_X   = 0.U(3.W)
   val MT_B   = 1.U(3.W)
   val MT_H   = 2.U(3.W)
@@ -150,13 +152,13 @@ trait ControlConstants {
   val MT_BU  = 4.U(3.W)
   val MT_HU  = 5.U(3.W)
 
-  // Functional Unit Select
+  // Functional Unit Select - Used by ExecuteStage and Decoder
   val FU_ALU = 0.U(2.W)
   val FU_MULDIV = 1.U(2.W)
   val FU_MEM = 2.U(2.W)
   val FU_CSR = 3.U(2.W)
+
+  // Bubble instruction (ADDI x0, x0, 0 - NOP)
+  val BUBBLE = 0x4033.U(32.W)
 }
 
-object Constants extends Instructions with ControlConstants {
-  val BUBBLE = 0x4033.U(32.W)  // ADDI x0, x0, 0 - NOP
-}
