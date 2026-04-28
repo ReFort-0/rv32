@@ -151,7 +151,7 @@ module Decoder(
               ? 3'h2
               : _cs_T_63
                   ? 3'h3
-                  : _cs_T_65 ? 3'h5 : _cs_T_67 ? 3'h4 : _cs_T_69 ? 3'h6 : {3{_cs_T_71}};
+                  : _cs_T_65 ? 3'h5 : _cs_T_67 ? 3'h4 : _cs_T_69 ? 3'h6 : {3{_GEN_4}};
   assign io_ctrl_mem_en = |cs_10;
   assign io_ctrl_mem_rw = cs_10 == 2'h2;
   assign io_ctrl_wb_sel =

@@ -85,7 +85,7 @@ class Decoder(implicit config: CoreConfig) extends Module {
 
     // RV32I Jumps
     JAL   -> List(Y, PC_PLUS4, OP1_PC,  OP2_IMM, IMM_J,  ALU_ADD,  FU_ALU, BR_J,   WB_PC4, Y, M_X,   MT_X,  N),
-    JALR  -> List(Y, PC_JALR,  OP1_RS1, OP2_IMM, IMM_I,  ALU_ADD,  FU_ALU, BR_N,   WB_PC4, Y, M_X,   MT_X,  N),
+    JALR  -> List(Y, PC_JALR,  OP1_RS1, OP2_IMM, IMM_I,  ALU_ADD,  FU_ALU, BR_J,   WB_PC4, Y, M_X,   MT_X,  N),
 
     // RV32M Multiply Extension (only valid when useM=true)
     MUL    -> List(Y, PC_PLUS4, OP1_RS1, OP2_RS2, IMM_X,  ALU_X,    FU_MULDIV, BR_N, WB_ALU, Y, M_X, MT_X, Y),
@@ -101,16 +101,19 @@ class Decoder(implicit config: CoreConfig) extends Module {
   val cs = ListLookup(io.inst, defaultCtrl, decodeTable)
 
   val ctrl = Wire(new ControlSignals)
+  ctrl.valid      := cs(0)
+  ctrl.pc_sel     := cs(1)
   ctrl.op1_sel    := cs(2)
   ctrl.op2_sel    := cs(3)
+  ctrl.imm_type   := cs(4)
   ctrl.alu_op     := cs(5)
+  ctrl.fu_sel     := cs(6)
   ctrl.branch_type:= cs(7)
+  ctrl.wb_sel     := cs(8)
+  ctrl.reg_write  := cs(9)
   ctrl.mem_en     := cs(10) =/= M_X
   ctrl.mem_rw     := cs(10) === M_XWR
   ctrl.mem_type   := cs(11)
-  ctrl.wb_sel     := cs(8)
-  ctrl.reg_write  := cs(9)
-  ctrl.imm_type   := cs(4)
 
   io.ctrl := ctrl
 }

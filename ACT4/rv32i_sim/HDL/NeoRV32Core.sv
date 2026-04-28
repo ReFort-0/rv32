@@ -68,7 +68,6 @@ module NeoRV32Core(
   );
   DecodeStage decode (
     .clock               (clock),
-    .reset               (reset),
     .io_ifid_pc          (_fetch_io_ifid_pc),
     .io_ifid_inst        (_fetch_io_ifid_inst),
     .io_ifid_valid       (_fetch_io_ifid_valid),
@@ -91,8 +90,6 @@ module NeoRV32Core(
     .io_idex_reg_write   (_decode_io_idex_reg_write)
   );
   ExecuteStage execute (
-    .clock               (clock),
-    .reset               (reset),
     .io_idex_pc          (_decode_io_idex_pc),
     .io_idex_valid       (_decode_io_idex_valid),
     .io_idex_rd_addr     (_decode_io_idex_rd_addr),
@@ -120,8 +117,6 @@ module NeoRV32Core(
     .io_pc_take          (_execute_io_pc_take)
   );
   MemoryStage memory (
-    .clock               (clock),
-    .reset               (reset),
     .io_exmem_pc         (_execute_io_exmem_pc),
     .io_exmem_valid      (_execute_io_exmem_valid),
     .io_exmem_rd_addr    (_execute_io_exmem_rd_addr),
@@ -145,7 +140,6 @@ module NeoRV32Core(
     .io_memwb_reg_write  (_memory_io_memwb_reg_write)
   );
   WritebackStage writeback (
-    .clock               (clock),
     .io_memwb_pc         (_memory_io_memwb_pc),
     .io_memwb_valid      (_memory_io_memwb_valid),
     .io_memwb_rd_addr    (_memory_io_memwb_rd_addr),

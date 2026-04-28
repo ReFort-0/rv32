@@ -97,36 +97,53 @@ class DecodeStage(implicit config: CoreConfig) extends Module {
   regfile.io.rd_data := io.wb_rd_data
   regfile.io.wen := io.wb_reg_write
 
-  // Pipeline register (or direct pass for single-cycle)
-  val idex_reg = RegInit(0.U.asTypeOf(new IDEXBundle))
-
-  when(io.flush) {
-    idex_reg.valid := false.B
-  }.elsewhen(!io.stall) {
-    idex_reg.pc := io.ifid.pc
-    idex_reg.inst := io.ifid.inst
-    idex_reg.valid := io.ifid.valid
-
-    idex_reg.rs1_addr := io.ifid.inst(19, 15)
-    idex_reg.rs2_addr := io.ifid.inst(24, 20)
-    idex_reg.rd_addr := io.ifid.inst(11, 7)
-
-    idex_reg.rs1_data := regfile.io.rs1_data
-    idex_reg.rs2_data := regfile.io.rs2_data
-    idex_reg.imm := immgen.io.out
-
-    idex_reg.op1_sel := decoder.io.ctrl.op1_sel
-    idex_reg.op2_sel := decoder.io.ctrl.op2_sel
-    idex_reg.alu_op := decoder.io.ctrl.alu_op
-    idex_reg.branch_type := decoder.io.ctrl.branch_type
-    idex_reg.mem_en := decoder.io.ctrl.mem_en
-    idex_reg.mem_rw := decoder.io.ctrl.mem_rw
-    idex_reg.mem_type := decoder.io.ctrl.mem_type
-    idex_reg.wb_sel := decoder.io.ctrl.wb_sel
-    idex_reg.reg_write := decoder.io.ctrl.reg_write
+  if (config.pipelineStages == 1) {
+    val idex_wire = Wire(new IDEXBundle)
+    idex_wire.pc := io.ifid.pc
+    idex_wire.inst := io.ifid.inst
+    idex_wire.valid := io.ifid.valid
+    idex_wire.rs1_addr := io.ifid.inst(19, 15)
+    idex_wire.rs2_addr := io.ifid.inst(24, 20)
+    idex_wire.rd_addr := io.ifid.inst(11, 7)
+    idex_wire.rs1_data := regfile.io.rs1_data
+    idex_wire.rs2_data := regfile.io.rs2_data
+    idex_wire.imm := immgen.io.out
+    idex_wire.op1_sel := decoder.io.ctrl.op1_sel
+    idex_wire.op2_sel := decoder.io.ctrl.op2_sel
+    idex_wire.alu_op := decoder.io.ctrl.alu_op
+    idex_wire.branch_type := decoder.io.ctrl.branch_type
+    idex_wire.mem_en := decoder.io.ctrl.mem_en
+    idex_wire.mem_rw := decoder.io.ctrl.mem_rw
+    idex_wire.mem_type := decoder.io.ctrl.mem_type
+    idex_wire.wb_sel := decoder.io.ctrl.wb_sel
+    idex_wire.reg_write := decoder.io.ctrl.reg_write
+    io.idex := idex_wire
+  } else {
+    val idex_reg = RegInit(0.U.asTypeOf(new IDEXBundle))
+    when(io.flush) {
+      idex_reg.valid := false.B
+    }.elsewhen(!io.stall) {
+      idex_reg.pc := io.ifid.pc
+      idex_reg.inst := io.ifid.inst
+      idex_reg.valid := io.ifid.valid
+      idex_reg.rs1_addr := io.ifid.inst(19, 15)
+      idex_reg.rs2_addr := io.ifid.inst(24, 20)
+      idex_reg.rd_addr := io.ifid.inst(11, 7)
+      idex_reg.rs1_data := regfile.io.rs1_data
+      idex_reg.rs2_data := regfile.io.rs2_data
+      idex_reg.imm := immgen.io.out
+      idex_reg.op1_sel := decoder.io.ctrl.op1_sel
+      idex_reg.op2_sel := decoder.io.ctrl.op2_sel
+      idex_reg.alu_op := decoder.io.ctrl.alu_op
+      idex_reg.branch_type := decoder.io.ctrl.branch_type
+      idex_reg.mem_en := decoder.io.ctrl.mem_en
+      idex_reg.mem_rw := decoder.io.ctrl.mem_rw
+      idex_reg.mem_type := decoder.io.ctrl.mem_type
+      idex_reg.wb_sel := decoder.io.ctrl.wb_sel
+      idex_reg.reg_write := decoder.io.ctrl.reg_write
+    }
+    io.idex := idex_reg
   }
-
-  io.idex := idex_reg
 }
 
 // ============================================================
@@ -188,31 +205,42 @@ class ExecuteStage(implicit config: CoreConfig) extends Module {
   val pc_plus_imm = io.idex.pc + io.idex.imm
   val jalr_target = Cat((rs1_data + io.idex.imm)(31, 1), 0.U(1.W))
 
-  // JALR uses jalr_target (rs1 + imm with LSB cleared)
-  // JAL and branches use pc_plus_imm (PC + imm)
-  io.pc_target := Mux(io.idex.branch_type === BR_N, jalr_target, pc_plus_imm)
+  io.pc_target := Mux(io.idex.op1_sel === OP1_RS1, jalr_target, pc_plus_imm)
   io.pc_take := branch_taken
 
-  // Pipeline output
-  val exmem_reg = RegInit(0.U.asTypeOf(new EXMEMBundle))
-
-  when(io.flush) {
-    exmem_reg.valid := false.B
-  }.elsewhen(!io.stall) {
-    exmem_reg.pc := io.idex.pc
-    exmem_reg.inst := io.idex.inst
-    exmem_reg.valid := io.idex.valid
-    exmem_reg.rd_addr := io.idex.rd_addr
-    exmem_reg.alu_result := alu.io.out
-    exmem_reg.rs2_data := io.idex.rs2_data
-    exmem_reg.mem_en := io.idex.mem_en
-    exmem_reg.mem_rw := io.idex.mem_rw
-    exmem_reg.mem_type := io.idex.mem_type
-    exmem_reg.wb_sel := io.idex.wb_sel
-    exmem_reg.reg_write := io.idex.reg_write
+  if (config.pipelineStages == 1) {
+    val exmem_wire = Wire(new EXMEMBundle)
+    exmem_wire.pc := io.idex.pc
+    exmem_wire.inst := io.idex.inst
+    exmem_wire.valid := io.idex.valid
+    exmem_wire.rd_addr := io.idex.rd_addr
+    exmem_wire.alu_result := alu.io.out
+    exmem_wire.rs2_data := io.idex.rs2_data
+    exmem_wire.mem_en := io.idex.mem_en
+    exmem_wire.mem_rw := io.idex.mem_rw
+    exmem_wire.mem_type := io.idex.mem_type
+    exmem_wire.wb_sel := io.idex.wb_sel
+    exmem_wire.reg_write := io.idex.reg_write
+    io.exmem := exmem_wire
+  } else {
+    val exmem_reg = RegInit(0.U.asTypeOf(new EXMEMBundle))
+    when(io.flush) {
+      exmem_reg.valid := false.B
+    }.elsewhen(!io.stall) {
+      exmem_reg.pc := io.idex.pc
+      exmem_reg.inst := io.idex.inst
+      exmem_reg.valid := io.idex.valid
+      exmem_reg.rd_addr := io.idex.rd_addr
+      exmem_reg.alu_result := alu.io.out
+      exmem_reg.rs2_data := io.idex.rs2_data
+      exmem_reg.mem_en := io.idex.mem_en
+      exmem_reg.mem_rw := io.idex.mem_rw
+      exmem_reg.mem_type := io.idex.mem_type
+      exmem_reg.wb_sel := io.idex.wb_sel
+      exmem_reg.reg_write := io.idex.reg_write
+    }
+    io.exmem := exmem_reg
   }
-
-  io.exmem := exmem_reg
 }
 
 // ============================================================
@@ -243,23 +271,33 @@ class MemoryStage(implicit config: CoreConfig) extends Module {
   io.data_req.mask := 0xf.U  // TODO: proper byte mask based on mem_type
   io.data_req.valid := io.exmem.mem_en
 
-  // Pipeline output
-  val memwb_reg = RegInit(0.U.asTypeOf(new MEMWBBundle))
-
-  when(io.flush) {
-    memwb_reg.valid := false.B
-  }.elsewhen(!io.stall) {
-    memwb_reg.pc := io.exmem.pc
-    memwb_reg.inst := io.exmem.inst
-    memwb_reg.valid := io.exmem.valid
-    memwb_reg.rd_addr := io.exmem.rd_addr
-    memwb_reg.alu_result := io.exmem.alu_result
-    memwb_reg.mem_rdata := io.data_resp.rdata
-    memwb_reg.wb_sel := io.exmem.wb_sel
-    memwb_reg.reg_write := io.exmem.reg_write
+  if (config.pipelineStages == 1) {
+    val memwb_wire = Wire(new MEMWBBundle)
+    memwb_wire.pc := io.exmem.pc
+    memwb_wire.inst := io.exmem.inst
+    memwb_wire.valid := io.exmem.valid
+    memwb_wire.rd_addr := io.exmem.rd_addr
+    memwb_wire.alu_result := io.exmem.alu_result
+    memwb_wire.mem_rdata := io.data_resp.rdata
+    memwb_wire.wb_sel := io.exmem.wb_sel
+    memwb_wire.reg_write := io.exmem.reg_write
+    io.memwb := memwb_wire
+  } else {
+    val memwb_reg = RegInit(0.U.asTypeOf(new MEMWBBundle))
+    when(io.flush) {
+      memwb_reg.valid := false.B
+    }.elsewhen(!io.stall) {
+      memwb_reg.pc := io.exmem.pc
+      memwb_reg.inst := io.exmem.inst
+      memwb_reg.valid := io.exmem.valid
+      memwb_reg.rd_addr := io.exmem.rd_addr
+      memwb_reg.alu_result := io.exmem.alu_result
+      memwb_reg.mem_rdata := io.data_resp.rdata
+      memwb_reg.wb_sel := io.exmem.wb_sel
+      memwb_reg.reg_write := io.exmem.reg_write
+    }
+    io.memwb := memwb_reg
   }
-
-  io.memwb := memwb_reg
 }
 
 // ============================================================
@@ -287,12 +325,16 @@ class WritebackStage(implicit config: CoreConfig) extends Module {
     (io.memwb.wb_sel === WB_PC4) -> (io.memwb.pc + 4.U)
   ))
 
-  // Outputs (registered for timing)
-  val rd_addr_reg = RegNext(io.memwb.rd_addr)
-  val rd_data_reg = RegNext(wb_data)
-  val reg_write_reg = RegNext(io.memwb.reg_write && io.memwb.valid && !io.stall)
-
-  io.wb_rd_addr := rd_addr_reg
-  io.wb_rd_data := rd_data_reg
-  io.wb_reg_write := reg_write_reg
+  if (config.pipelineStages == 1) {
+    io.wb_rd_addr := io.memwb.rd_addr
+    io.wb_rd_data := wb_data
+    io.wb_reg_write := io.memwb.reg_write && io.memwb.valid
+  } else {
+    val rd_addr_reg = RegNext(io.memwb.rd_addr)
+    val rd_data_reg = RegNext(wb_data)
+    val reg_write_reg = RegNext(io.memwb.reg_write && io.memwb.valid && !io.stall)
+    io.wb_rd_addr := rd_addr_reg
+    io.wb_rd_data := rd_data_reg
+    io.wb_reg_write := reg_write_reg
+  }
 }

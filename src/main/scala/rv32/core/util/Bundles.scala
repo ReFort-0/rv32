@@ -98,14 +98,17 @@ class MEMWBBundle(implicit config: CoreConfig) extends Bundle {
 // ============================================================
 
 class ControlSignals extends Bundle {
-  val op1_sel   = UInt(2.W)
-  val op2_sel   = UInt(3.W)
-  val alu_op    = UInt(4.W)
+  val valid       = Bool()
+  val pc_sel      = UInt(2.W)
+  val op1_sel     = UInt(2.W)
+  val op2_sel     = UInt(3.W)
+  val alu_op      = UInt(4.W)
+  val fu_sel      = UInt(2.W)
   val branch_type = UInt(3.W)
-  val mem_en    = Bool()
-  val mem_rw    = Bool()
-  val mem_type  = UInt(3.W)
-  val wb_sel    = UInt(2.W)
-  val reg_write = Bool()
-  val imm_type  = UInt(3.W)
+  val mem_en      = Bool()
+  val mem_rw      = Bool()
+  val mem_type    = UInt(3.W)
+  val wb_sel      = UInt(2.W)
+  val reg_write   = Bool()
+  val imm_type    = UInt(3.W)
 }
