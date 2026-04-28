@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Simulation parameters 仿真参数
 TRACE_ARGS = "--trace-fst --trace-depth 0"
-TOP_TB = "NeoRV32SoC_Act_tb"
+TOP_TB = "NeoRV32_Act_tb"
 MAX_CYCLES_FACTOR = 3
 RAM_WORD_DEPTH = 0x0004_0000  # 4KB = 1024 words
 
@@ -74,7 +74,7 @@ def build_verilator_simulation_exe(ram_base: int):
 
     (VERILATOR_CPP / "rtl.files").write_text("\n".join(all_files), "utf-8")
 
-    cmd = f"verilator {TRACE_ARGS} --top {TOP_TB} -f rtl.files -cc --exe --build sim_main.cpp -GRAM_WORD_DEPTH={RAM_WORD_DEPTH} -GRAM_BASE_ADDR={ram_base}".split()
+    cmd = f"verilator {TRACE_ARGS} --top {TOP_TB} -f rtl.files -cc --exe --build sim_main.cpp trace_dpi.cpp -GRAM_WORD_DEPTH={RAM_WORD_DEPTH} -GRAM_BASE_ADDR={ram_base}".split()
     subprocess.run(cmd, cwd=VERILATOR_CPP, text=True, check=True)
     return VERILATOR_CPP / "obj_dir" / f"V{TOP_TB}"
 

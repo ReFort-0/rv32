@@ -29,7 +29,7 @@ class FetchStage(implicit config: CoreConfig) extends Module {
   val io = IO(new FetchStageIO)
 
   // PC Register
-  val pc_reg = RegInit(0.U(32.W))
+  val pc_reg = RegInit(0x80000000L.U(32.W))
 
   // Instruction request - always fetch from PC
   io.inst_req.addr := pc_reg
@@ -188,7 +188,9 @@ class ExecuteStage(implicit config: CoreConfig) extends Module {
   val pc_plus_imm = io.idex.pc + io.idex.imm
   val jalr_target = Cat((rs1_data + io.idex.imm)(31, 1), 0.U(1.W))
 
-  io.pc_target := Mux(io.idex.branch_type === BR_N, pc_plus_imm, jalr_target)
+  // JALR uses jalr_target (rs1 + imm with LSB cleared)
+  // JAL and branches use pc_plus_imm (PC + imm)
+  io.pc_target := Mux(io.idex.branch_type === BR_N, jalr_target, pc_plus_imm)
   io.pc_take := branch_taken
 
   // Pipeline output

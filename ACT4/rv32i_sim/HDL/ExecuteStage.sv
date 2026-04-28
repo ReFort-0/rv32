@@ -95,7 +95,7 @@ module ExecuteStage(
   assign io_exmem_wb_sel = exmem_reg_wb_sel;
   assign io_exmem_reg_write = exmem_reg_reg_write;
   assign io_pc_target =
-    io_idex_branch_type == 3'h0 ? io_idex_pc + io_idex_imm : {_jalr_target_T[31:1], 1'h0};
+    io_idex_branch_type == 3'h0 ? {_jalr_target_T[31:1], 1'h0} : io_idex_pc + io_idex_imm;
   assign io_pc_take = _GEN[io_idex_branch_type];
 endmodule
 

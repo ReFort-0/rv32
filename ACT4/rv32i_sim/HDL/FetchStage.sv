@@ -16,7 +16,7 @@ module FetchStage(
   reg [31:0] pc_reg;
   always @(posedge clock) begin
     if (reset)
-      pc_reg <= 32'h0;
+      pc_reg <= 32'h80000000;
     else
       pc_reg <= io_pc_we ? io_pc_next : pc_reg + 32'h4;
   end // always @(posedge)
