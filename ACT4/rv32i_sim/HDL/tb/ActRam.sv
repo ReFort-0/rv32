@@ -30,11 +30,8 @@ module ActRam #(
   logic [3:0] byte_enable;
   logic [31:0] true_wdata, wdata;
   always_comb begin
-    /* verilator lint_off IMPLICITSTATIC */
-    /* verilator lint_off UNOPTFLAT */
-    logic [31:0] write_mask = 0;
-    /* verilator lint_on IMPLICITSTATIC */
-    /* verilator lint_on UNOPTFLAT */
+    logic [31:0] write_mask;
+    write_mask = 32'b0;
     for (int i = 0; i < 4; ++i) begin
       write_mask |= (32'({8{byte_enable[i]}}) << i * 8);
     end

@@ -35,6 +35,7 @@ class NeoRV32CoreIO(implicit config: CoreConfig) extends Bundle {
 
 class NeoRV32Core(implicit config: CoreConfig) extends Module {
   val io = IO(new NeoRV32CoreIO)
+  dontTouch(io.dmem.req.mask)
 
   // Pipeline stage instances
   val fetch = Module(new FetchStage)

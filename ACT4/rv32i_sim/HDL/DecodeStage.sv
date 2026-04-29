@@ -19,6 +19,7 @@ module DecodeStage(
   output [2:0]  io_idex_branch_type,
   output        io_idex_mem_en,
                 io_idex_mem_rw,
+  output [2:0]  io_idex_mem_type,
   output [1:0]  io_idex_wb_sel,
   output        io_idex_reg_write
 );
@@ -32,6 +33,7 @@ module DecodeStage(
     .io_ctrl_branch_type (io_idex_branch_type),
     .io_ctrl_mem_en      (io_idex_mem_en),
     .io_ctrl_mem_rw      (io_idex_mem_rw),
+    .io_ctrl_mem_type    (io_idex_mem_type),
     .io_ctrl_wb_sel      (io_idex_wb_sel),
     .io_ctrl_reg_write   (io_idex_reg_write),
     .io_ctrl_imm_type    (_decoder_io_ctrl_imm_type)

@@ -8,7 +8,8 @@ module NeoRV32Core(
   output [31:0] io_dmem_req_addr,
                 io_dmem_req_wdata,
   output        io_dmem_req_wen,
-                io_dmem_req_valid,
+  output [3:0]  io_dmem_req_mask,
+  output        io_dmem_req_valid,
   input  [31:0] io_dmem_resp_rdata,
   output [31:0] io_debug_pc
 );
@@ -30,6 +31,7 @@ module NeoRV32Core(
   wire [31:0] _execute_io_exmem_rs2_data;
   wire        _execute_io_exmem_mem_en;
   wire        _execute_io_exmem_mem_rw;
+  wire [2:0]  _execute_io_exmem_mem_type;
   wire [1:0]  _execute_io_exmem_wb_sel;
   wire        _execute_io_exmem_reg_write;
   wire [31:0] _execute_io_pc_target;
@@ -46,6 +48,7 @@ module NeoRV32Core(
   wire [2:0]  _decode_io_idex_branch_type;
   wire        _decode_io_idex_mem_en;
   wire        _decode_io_idex_mem_rw;
+  wire [2:0]  _decode_io_idex_mem_type;
   wire [1:0]  _decode_io_idex_wb_sel;
   wire        _decode_io_idex_reg_write;
   wire [31:0] _fetch_io_ifid_pc;
@@ -86,6 +89,7 @@ module NeoRV32Core(
     .io_idex_branch_type (_decode_io_idex_branch_type),
     .io_idex_mem_en      (_decode_io_idex_mem_en),
     .io_idex_mem_rw      (_decode_io_idex_mem_rw),
+    .io_idex_mem_type    (_decode_io_idex_mem_type),
     .io_idex_wb_sel      (_decode_io_idex_wb_sel),
     .io_idex_reg_write   (_decode_io_idex_reg_write)
   );
@@ -102,6 +106,7 @@ module NeoRV32Core(
     .io_idex_branch_type (_decode_io_idex_branch_type),
     .io_idex_mem_en      (_decode_io_idex_mem_en),
     .io_idex_mem_rw      (_decode_io_idex_mem_rw),
+    .io_idex_mem_type    (_decode_io_idex_mem_type),
     .io_idex_wb_sel      (_decode_io_idex_wb_sel),
     .io_idex_reg_write   (_decode_io_idex_reg_write),
     .io_exmem_pc         (_execute_io_exmem_pc),
@@ -111,6 +116,7 @@ module NeoRV32Core(
     .io_exmem_rs2_data   (_execute_io_exmem_rs2_data),
     .io_exmem_mem_en     (_execute_io_exmem_mem_en),
     .io_exmem_mem_rw     (_execute_io_exmem_mem_rw),
+    .io_exmem_mem_type   (_execute_io_exmem_mem_type),
     .io_exmem_wb_sel     (_execute_io_exmem_wb_sel),
     .io_exmem_reg_write  (_execute_io_exmem_reg_write),
     .io_pc_target        (_execute_io_pc_target),
@@ -124,11 +130,13 @@ module NeoRV32Core(
     .io_exmem_rs2_data   (_execute_io_exmem_rs2_data),
     .io_exmem_mem_en     (_execute_io_exmem_mem_en),
     .io_exmem_mem_rw     (_execute_io_exmem_mem_rw),
+    .io_exmem_mem_type   (_execute_io_exmem_mem_type),
     .io_exmem_wb_sel     (_execute_io_exmem_wb_sel),
     .io_exmem_reg_write  (_execute_io_exmem_reg_write),
     .io_data_req_addr    (io_dmem_req_addr),
     .io_data_req_wdata   (io_dmem_req_wdata),
     .io_data_req_wen     (io_dmem_req_wen),
+    .io_data_req_mask    (io_dmem_req_mask),
     .io_data_req_valid   (io_dmem_req_valid),
     .io_data_resp_rdata  (io_dmem_resp_rdata),
     .io_memwb_pc         (_memory_io_memwb_pc),

@@ -7,12 +7,14 @@ module MemoryStage(
                 io_exmem_rs2_data,
   input         io_exmem_mem_en,
                 io_exmem_mem_rw,
+  input  [2:0]  io_exmem_mem_type,
   input  [1:0]  io_exmem_wb_sel,
   input         io_exmem_reg_write,
   output [31:0] io_data_req_addr,
                 io_data_req_wdata,
   output        io_data_req_wen,
-                io_data_req_valid,
+  output [3:0]  io_data_req_mask,
+  output        io_data_req_valid,
   input  [31:0] io_data_resp_rdata,
   output [31:0] io_memwb_pc,
   output        io_memwb_valid,
@@ -23,15 +25,34 @@ module MemoryStage(
   output        io_memwb_reg_write
 );
 
+  wire       _load_data_T = io_exmem_mem_type == 3'h1;
+  wire [6:0] _GEN = {5'h0, io_exmem_alu_result[1:0]};
+  wire [6:0] _store_mask_T_1 = 7'h1 << _GEN;
+  wire       _load_data_T_8 = io_exmem_mem_type == 3'h2;
+  wire [6:0] _store_mask_T_3 = 7'h3 << _GEN;
   assign io_data_req_addr = io_exmem_alu_result;
-  assign io_data_req_wdata = io_exmem_rs2_data;
+  assign io_data_req_wdata =
+    _load_data_T
+      ? {4{io_exmem_rs2_data[7:0]}}
+      : _load_data_T_8 ? {2{io_exmem_rs2_data[15:0]}} : io_exmem_rs2_data;
   assign io_data_req_wen = io_exmem_mem_rw;
+  assign io_data_req_mask =
+    _load_data_T ? _store_mask_T_1[3:0] : _load_data_T_8 ? _store_mask_T_3[3:0] : 4'hF;
   assign io_data_req_valid = io_exmem_mem_en;
   assign io_memwb_pc = io_exmem_pc;
   assign io_memwb_valid = io_exmem_valid;
   assign io_memwb_rd_addr = io_exmem_rd_addr;
   assign io_memwb_alu_result = io_exmem_alu_result;
-  assign io_memwb_mem_rdata = io_data_resp_rdata;
+  assign io_memwb_mem_rdata =
+    _load_data_T
+      ? {{24{io_data_resp_rdata[7]}}, io_data_resp_rdata[7:0]}
+      : io_exmem_mem_type == 3'h4
+          ? {24'h0, io_data_resp_rdata[7:0]}
+          : _load_data_T_8
+              ? {{16{io_data_resp_rdata[15]}}, io_data_resp_rdata[15:0]}
+              : io_exmem_mem_type == 3'h5
+                  ? {16'h0, io_data_resp_rdata[15:0]}
+                  : io_data_resp_rdata;
   assign io_memwb_wb_sel = io_exmem_wb_sel;
   assign io_memwb_reg_write = io_exmem_reg_write;
 endmodule

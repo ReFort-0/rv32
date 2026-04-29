@@ -7,6 +7,7 @@ module Decoder(
   output [2:0]  io_ctrl_branch_type,
   output        io_ctrl_mem_en,
                 io_ctrl_mem_rw,
+  output [2:0]  io_ctrl_mem_type,
   output [1:0]  io_ctrl_wb_sel,
   output        io_ctrl_reg_write,
   output [2:0]  io_ctrl_imm_type
@@ -154,6 +155,16 @@ module Decoder(
                   : _cs_T_65 ? 3'h5 : _cs_T_67 ? 3'h4 : _cs_T_69 ? 3'h6 : {3{_GEN_4}};
   assign io_ctrl_mem_en = |cs_10;
   assign io_ctrl_mem_rw = cs_10 == 2'h2;
+  assign io_ctrl_mem_type =
+    _cs_T_1
+      ? 3'h3
+      : _cs_T_3
+          ? 3'h2
+          : _cs_T_5
+              ? 3'h5
+              : _cs_T_7
+                  ? 3'h1
+                  : _cs_T_9 ? 3'h4 : _cs_T_11 ? 3'h3 : _cs_T_13 ? 3'h2 : {2'h0, _cs_T_15};
   assign io_ctrl_wb_sel =
     _GEN_10
       ? 2'h2

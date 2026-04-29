@@ -12,6 +12,7 @@ module ExecuteStage(
   input  [2:0]  io_idex_branch_type,
   input         io_idex_mem_en,
                 io_idex_mem_rw,
+  input  [2:0]  io_idex_mem_type,
   input  [1:0]  io_idex_wb_sel,
   input         io_idex_reg_write,
   output [31:0] io_exmem_pc,
@@ -21,6 +22,7 @@ module ExecuteStage(
                 io_exmem_rs2_data,
   output        io_exmem_mem_en,
                 io_exmem_mem_rw,
+  output [2:0]  io_exmem_mem_type,
   output [1:0]  io_exmem_wb_sel,
   output        io_exmem_reg_write,
   output [31:0] io_pc_target,
@@ -55,6 +57,7 @@ module ExecuteStage(
   assign io_exmem_rs2_data = io_idex_rs2_data;
   assign io_exmem_mem_en = io_idex_mem_en;
   assign io_exmem_mem_rw = io_idex_mem_rw;
+  assign io_exmem_mem_type = io_idex_mem_type;
   assign io_exmem_wb_sel = io_idex_wb_sel;
   assign io_exmem_reg_write = io_idex_reg_write;
   assign io_pc_target =

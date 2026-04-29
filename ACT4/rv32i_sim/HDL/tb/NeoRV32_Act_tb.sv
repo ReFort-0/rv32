@@ -15,6 +15,7 @@ module NeoRV32_Act_tb
   wire [31:0] dmem_req_addr;
   wire [31:0] dmem_req_wdata;
   wire        dmem_req_wen;
+  wire [3:0]  dmem_req_mask;
   wire        dmem_req_valid;
   wire [31:0] dmem_resp_rdata;
 
@@ -37,7 +38,10 @@ module NeoRV32_Act_tb
   assign memory.write      = dmem_req_wen && dmem_req_valid;
   assign memory.read       = !dmem_req_wen && dmem_req_valid;
   assign memory.read_size  = 2'b10;   // Word read
-  assign memory.write_size = 2'b10;   // Word write
+  wire [1:0] mask_ones = {1'b0, dmem_req_mask[0]} + {1'b0, dmem_req_mask[1]}
+                       + {1'b0, dmem_req_mask[2]} + {1'b0, dmem_req_mask[3]};
+  assign memory.write_size = (mask_ones == 2'd1) ? 2'b00 :
+                             (mask_ones == 2'd2) ? 2'b01 : 2'b10;
   assign dmem_resp_rdata   = memory.rdata;
 
   // ActRam - unified memory (uses interfaces)
@@ -59,6 +63,7 @@ module NeoRV32_Act_tb
     .io_dmem_req_addr(dmem_req_addr),
     .io_dmem_req_wdata(dmem_req_wdata),
     .io_dmem_req_wen(dmem_req_wen),
+    .io_dmem_req_mask(dmem_req_mask),
     .io_dmem_req_valid(dmem_req_valid),
     .io_dmem_resp_rdata(dmem_resp_rdata),
     .io_debug_pc(debug_pc)
@@ -108,32 +113,32 @@ module NeoRV32_Act_tb
   import "DPI-C" function void trace_fini_dpi(input int total_cycles);
 
   // Debug: trace first few instructions
-  initial begin
-    trace_init_dpi();
-    $display("=== NeoRV32 ACT4 Test Starting ===");
-    $display("RAM_BASE_ADDR = %08x", RAM_BASE_ADDR);
-    $display("RAM_WORD_DEPTH = %0d", RAM_WORD_DEPTH);
-  end
+  // initial begin
+  //   trace_init_dpi();
+  //   $display("=== NeoRV32 ACT4 Test Starting ===");
+  //   $display("RAM_BASE_ADDR = %08x", RAM_BASE_ADDR);
+  //   $display("RAM_WORD_DEPTH = %0d", RAM_WORD_DEPTH);
+  // end
 
-  int unsigned cycle_count = 0;
-  always @(posedge clk) begin
-    if (!rst) begin
-      cycle_count <= cycle_count + 1;
-      if (cycle_count < 20) begin
-        trace_instruction_dpi(
-          cycle_count,
-          debug_pc,
-          imem_resp_rdata,
-          imem_req_addr,
-          dmem_req_addr,
-          {31'd0, dmem_req_wen},
-          {31'd0, dmem_req_valid}
-        );
-      end
-      if (cycle_count == 19) begin
-        trace_fini_dpi(cycle_count + 1);
-      end
-    end
-  end
+  // int unsigned cycle_count = 0;
+  // always @(posedge clk) begin
+  //   if (!rst) begin
+  //     cycle_count <= cycle_count + 1;
+  //     if (cycle_count < 20) begin
+  //       trace_instruction_dpi(
+  //         cycle_count,
+  //         debug_pc,
+  //         imem_resp_rdata,
+  //         imem_req_addr,
+  //         dmem_req_addr,
+  //         {31'd0, dmem_req_wen},
+  //         {31'd0, dmem_req_valid}
+  //       );
+  //     end
+  //     if (cycle_count == 19) begin
+  //       trace_fini_dpi(cycle_count + 1);
+  //     end
+  //   end
+  // end
 
 endmodule
