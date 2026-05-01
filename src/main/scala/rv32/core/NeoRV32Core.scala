@@ -34,6 +34,7 @@ class NeoRV32CoreIO(implicit config: CoreConfig) extends Bundle {
 }
 
 class NeoRV32Core(implicit config: CoreConfig) extends Module {
+  import Constants._
   val io = IO(new NeoRV32CoreIO)
   dontTouch(io.dmem.req.mask)
 
@@ -80,26 +81,96 @@ class NeoRV32Core(implicit config: CoreConfig) extends Module {
   fetch.io.stall := pc_stall
   fetch.io.flush := false.B
 
-  // Connect stall/flush to other stages (single-cycle: disabled)
-  decode.io.stall := false.B
-  decode.io.flush := false.B
-  execute.io.stall := false.B
-  execute.io.flush := false.B
-  memory.io.stall := false.B
-  memory.io.flush := false.B
-  writeback.io.stall := false.B
+  // Default forwarding signals (no forwarding for 1-stage and 3-stage)
+  execute.io.forward_a := 0.U
+  execute.io.forward_b := 0.U
+  execute.io.ex_fwd_data := 0.U
+  execute.io.mem_fwd_data := 0.U
 
   // Pipeline stage configuration based on pipelineStages parameter
   if (config.pipelineStages == 1) {
     // Single-cycle: combinational through all stages
     // Registers already in stages for clean timing
     // No additional stalls/forwarding needed
+    decode.io.stall := false.B
+    decode.io.flush := false.B
+    execute.io.stall := false.B
+    execute.io.flush := false.B
+    memory.io.stall := false.B
+    memory.io.flush := false.B
+    writeback.io.stall := false.B
   } else if (config.pipelineStages == 3) {
     // 3-stage: IF | ID/EX | MEM/WB
-    // TODO: Implement 3-stage configuration
+    // Stages are combined: Decode+Execute in one cycle, Memory+Writeback in one cycle
+    // Simple load-use hazard detection
+
+    // Detect load-use hazard: if ID/EX stage has load and next instruction needs that register
+    val load_in_idex = execute.io.idex.mem_en && !execute.io.idex.mem_rw
+    val rs1_addr = decode.io.idex.rs1_addr
+    val rs2_addr = decode.io.idex.rs2_addr
+
+    val load_use_hazard_3stage = load_in_idex &&
+                                  execute.io.idex.reg_write &&
+                                  (execute.io.idex.rd_addr =/= 0.U) &&
+                                  decode.io.ifid.valid &&
+                                  ((rs1_addr === execute.io.idex.rd_addr) ||
+                                   (rs2_addr === execute.io.idex.rd_addr))
+
+    // Stall IF and ID/EX on load-use hazard
+    fetch.io.stall := load_use_hazard_3stage
+    decode.io.stall := load_use_hazard_3stage
+    execute.io.stall := load_use_hazard_3stage
+    memory.io.stall := false.B
+    writeback.io.stall := false.B
+
+    // Flush on branch taken
+    decode.io.flush := pc_take
+    execute.io.flush := pc_take || load_use_hazard_3stage
+    memory.io.flush := false.B
+
   } else if (config.pipelineStages == 5) {
     // 5-stage: IF | ID | EX | MEM | WB
-    // TODO: Implement 5-stage configuration with hazard unit
+    // Full hazard unit with forwarding
+
+    val hazard = Module(new HazardUnit)
+
+    // Connect hazard unit inputs
+    hazard.io.id_rs1_addr := decode.io.idex.rs1_addr
+    hazard.io.id_rs2_addr := decode.io.idex.rs2_addr
+    hazard.io.ex_rd_addr := execute.io.exmem.rd_addr
+    hazard.io.ex_reg_write := execute.io.exmem.reg_write
+    hazard.io.ex_mem_read := execute.io.exmem.mem_en && !execute.io.exmem.mem_rw
+    hazard.io.mem_rd_addr := memory.io.memwb.rd_addr
+    hazard.io.mem_reg_write := memory.io.memwb.reg_write
+    hazard.io.wb_rd_addr := writeback.io.wb_rd_addr
+    hazard.io.wb_reg_write := writeback.io.wb_reg_write
+
+    // Apply stall signals
+    fetch.io.stall := hazard.io.stall_if
+    decode.io.stall := hazard.io.stall_id
+    execute.io.stall := false.B
+    memory.io.stall := false.B
+    writeback.io.stall := false.B
+
+    // Apply flush signals
+    decode.io.flush := pc_take
+    execute.io.flush := pc_take || hazard.io.flush_ex
+    memory.io.flush := false.B
+
+    // Connect forwarding signals
+    execute.io.forward_a := hazard.io.forward_a
+    execute.io.forward_b := hazard.io.forward_b
+
+    // Forwarding data sources
+    // EX stage: ALU result from EX/MEM register
+    execute.io.ex_fwd_data := execute.io.exmem.alu_result
+
+    // MEM stage: Select between memory data and ALU result
+    execute.io.mem_fwd_data := Mux(
+      memory.io.memwb.wb_sel === WB_MEM,
+      memory.io.memwb.mem_rdata,
+      memory.io.memwb.alu_result
+    )
   }
 
   // Debug outputs

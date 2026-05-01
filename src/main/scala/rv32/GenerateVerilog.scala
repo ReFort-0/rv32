@@ -12,9 +12,9 @@ import rv32.soc._
 object GenerateVerilog extends App {
 
   val configs = Seq(
-    // ("E1T", Configs.E1T),
-    // ("IM3UG", Configs.IM3UG),
-    // ("I5UT", Configs.I5UT),
+    ("E1T", Configs.E1T),
+    ("IM3UG", Configs.IM3UG),
+    ("I5UT", Configs.I5UT),
     ("Default", Configs.Default)
   )
 

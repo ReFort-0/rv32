@@ -158,6 +158,16 @@ object Constants extends Instructions {
   val FU_MEM = 2.U(2.W)
   val FU_CSR = 3.U(2.W)
 
+  // MulDiv Operations - Used by MulDivUnit
+  val MULDIV_MUL    = 0.U(3.W)
+  val MULDIV_MULH   = 1.U(3.W)
+  val MULDIV_MULHSU = 2.U(3.W)
+  val MULDIV_MULHU  = 3.U(3.W)
+  val MULDIV_DIV    = 4.U(3.W)
+  val MULDIV_DIVU   = 5.U(3.W)
+  val MULDIV_REM    = 6.U(3.W)
+  val MULDIV_REMU   = 7.U(3.W)
+
   // Bubble instruction (ADDI x0, x0, 0 - NOP)
   val BUBBLE = 0x4033.U(32.W)
 }

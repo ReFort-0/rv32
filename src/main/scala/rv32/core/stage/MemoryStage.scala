@@ -33,6 +33,18 @@ class MemoryStage(implicit config: CoreConfig) extends Module {
     (io.exmem.mem_type === MT_H)  -> Fill(2, io.exmem.rs2_data(15, 0))
   ))
 
+  // Memory alignment assertions
+  when(io.exmem.valid && io.exmem.mem_en) {
+    switch(io.exmem.mem_type) {
+      is(MT_H, MT_HU) {
+        assert(io.exmem.alu_result(0) === 0.U, "Halfword access must be 2-byte aligned")
+      }
+      is(MT_W) {
+        assert(io.exmem.alu_result(1, 0) === 0.U, "Word access must be 4-byte aligned")
+      }
+    }
+  }
+
   io.data_req.addr := io.exmem.alu_result
   io.data_req.wdata := store_data
   io.data_req.wen := io.exmem.mem_rw

@@ -31,6 +31,11 @@ class SimpleBusSlave(implicit config: CoreConfig) extends Bundle {
   val resp = Output(new SimpleBusResp)
 }
 
+class SimpleBusSlaveIO(implicit config: CoreConfig) extends Bundle {
+  val req = Input(new SimpleBusReq)
+  val resp = Output(new SimpleBusResp)
+}
+
 // ============================================================
 // SimpleBus Demux - Routes requests to RAM or Peripherals
 // ============================================================
@@ -63,8 +68,11 @@ class SimpleBusDemux(nSlaves: Int)(implicit config: CoreConfig) extends Module {
 
   // Response mux - priority based (highest index first for easier override)
   val respValid = addrHits.map(_ && io.master.req.valid).zip(io.slaves.map(_.resp.valid)).map { case (a, v) => a && v }
-  val respData = Mux1H(respValid.zip(io.slaves.map(_.resp.rdata)))
+  val anyRespValid = respValid.reduce(_ || _)
 
-  io.master.resp.valid := respValid.reduce(_ || _)
+  // Use Mux1H with default value of 0 when no slave responds
+  val respData = Mux(anyRespValid, Mux1H(respValid.zip(io.slaves.map(_.resp.rdata))), 0.U)
+
+  io.master.resp.valid := anyRespValid
   io.master.resp.rdata := respData
 }

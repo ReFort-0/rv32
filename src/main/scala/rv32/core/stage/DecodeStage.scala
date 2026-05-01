@@ -48,6 +48,8 @@ class DecodeStage(implicit config: CoreConfig) extends Module {
   next.op1_sel := decoder.io.ctrl.op1_sel
   next.op2_sel := decoder.io.ctrl.op2_sel
   next.alu_op := decoder.io.ctrl.alu_op
+  next.fu_sel := decoder.io.ctrl.fu_sel
+  next.muldiv_op := decoder.io.ctrl.muldiv_op
   next.branch_type := decoder.io.ctrl.branch_type
   next.mem_en := decoder.io.ctrl.mem_en
   next.mem_rw := decoder.io.ctrl.mem_rw
