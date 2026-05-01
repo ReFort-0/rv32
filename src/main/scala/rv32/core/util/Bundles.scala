@@ -73,6 +73,7 @@ class EXMEMBundle(implicit config: CoreConfig) extends Bundle {
   val rs2_data  = UInt(config.xlen.W)
 
   // Control signals
+  val fu_sel    = UInt(2.W)  // Functional unit select (needed for MulDiv stall detection)
   val mem_en    = Bool()
   val mem_rw    = Bool()
   val mem_type  = UInt(3.W)

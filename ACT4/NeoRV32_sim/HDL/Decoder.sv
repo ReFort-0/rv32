@@ -4,6 +4,7 @@ module Decoder(
   output [1:0]  io_ctrl_op1_sel,
   output [2:0]  io_ctrl_op2_sel,
   output [3:0]  io_ctrl_alu_op,
+  output [1:0]  io_ctrl_fu_sel,
   output [2:0]  io_ctrl_branch_type,
   output        io_ctrl_mem_en,
                 io_ctrl_mem_rw,
@@ -52,53 +53,42 @@ module Decoder(
   wire        _cs_T_67 = _GEN == 10'h363;
   wire        _cs_T_69 = _GEN == 10'h3E3;
   wire        _cs_T_71 = io_inst[6:0] == 7'h6F;
-  wire        _cs_T_73 = _GEN == 10'h67;
-  wire        _cs_T_75 = _GEN_1 == 17'h433;
-  wire        _cs_T_77 = _GEN_1 == 17'h4B3;
-  wire        _cs_T_79 = _GEN_1 == 17'h533;
-  wire        _cs_T_81 = _GEN_1 == 17'h5B3;
-  wire        _cs_T_83 = _GEN_1 == 17'h633;
-  wire        _cs_T_85 = _GEN_1 == 17'h6B3;
-  wire        _cs_T_87 = _GEN_1 == 17'h733;
-  wire        _cs_T_618 = _GEN_1 == 17'h7B3;
+  wire        _cs_T_434 = _GEN == 10'h67;
   wire        _GEN_2 =
-    _cs_T_75 | _cs_T_77 | _cs_T_79 | _cs_T_81 | _cs_T_83 | _cs_T_85 | _cs_T_87
-    | _cs_T_618;
-  wire        _GEN_3 =
     _cs_T_35 | _cs_T_37 | _cs_T_39 | _cs_T_41 | _cs_T_43 | _cs_T_45 | _cs_T_47 | _cs_T_49
     | _cs_T_51 | _cs_T_53;
-  wire        _GEN_4 = _cs_T_71 | _cs_T_73;
-  wire        _GEN_5 =
+  wire        _GEN_3 = _cs_T_71 | _cs_T_434;
+  wire        _GEN_4 =
     _cs_T_55 | _cs_T_57 | _cs_T_59 | _cs_T_61 | _cs_T_63 | _cs_T_65 | _cs_T_67 | _cs_T_69
-    | _GEN_4;
-  wire        _GEN_6 =
+    | _GEN_3;
+  wire        _GEN_5 =
     _cs_T_17 | _cs_T_19 | _cs_T_21 | _cs_T_23 | _cs_T_25 | _cs_T_27 | _cs_T_29 | _cs_T_31
     | _cs_T_33;
-  wire        _GEN_7 = _cs_T_59 | _cs_T_61 | _cs_T_63 | _cs_T_65 | _cs_T_67 | _cs_T_69;
-  wire        _GEN_8 = _cs_T_55 | _cs_T_57;
-  wire        _GEN_9 = _cs_T_11 | _cs_T_13 | _cs_T_15;
-  wire        _GEN_10 = _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9;
-  wire        _GEN_11 =
+  wire        _GEN_6 = _cs_T_59 | _cs_T_61 | _cs_T_63 | _cs_T_65 | _cs_T_67 | _cs_T_69;
+  wire        _GEN_7 = _cs_T_55 | _cs_T_57;
+  wire        _GEN_8 = _cs_T_11 | _cs_T_13 | _cs_T_15;
+  wire        _GEN_9 = _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9;
+  wire        _GEN_10 =
     _cs_T_17 | _cs_T_19 | _cs_T_21 | _cs_T_23 | _cs_T_25 | _cs_T_27 | _cs_T_29 | _cs_T_31
     | _cs_T_33 | _cs_T_35 | _cs_T_37 | _cs_T_39 | _cs_T_41 | _cs_T_43 | _cs_T_45
-    | _cs_T_47 | _cs_T_49 | _cs_T_51 | _cs_T_53 | _GEN_8;
-  wire [1:0]  cs_10 = _GEN_10 ? 2'h1 : {_GEN_9, 1'h0};
+    | _cs_T_47 | _cs_T_49 | _cs_T_51 | _cs_T_53 | _GEN_7;
+  wire [1:0]  cs_11 = _GEN_9 ? 2'h1 : {_GEN_8, 1'h0};
   assign io_ctrl_op1_sel =
     _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9 | _cs_T_11 | _cs_T_13 | _cs_T_15
     | _cs_T_17 | _cs_T_19 | _cs_T_21 | _cs_T_23 | _cs_T_25 | _cs_T_27 | _cs_T_29
-    | _cs_T_31 | _cs_T_33 | _GEN_3
+    | _cs_T_31 | _cs_T_33 | _GEN_2
       ? 2'h1
       : _cs_T_55
           ? 2'h3
           : _cs_T_57 | _cs_T_59 | _cs_T_61 | _cs_T_63 | _cs_T_65 | _cs_T_67 | _cs_T_69
             | _cs_T_71
               ? 2'h2
-              : {1'h0, _cs_T_73 | _GEN_2};
+              : {1'h0, _cs_T_434};
   assign io_ctrl_op2_sel =
     _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9 | _cs_T_11 | _cs_T_13 | _cs_T_15
-    | _GEN_6
+    | _GEN_5
       ? 3'h2
-      : _GEN_3 ? 3'h1 : _GEN_5 ? 3'h2 : {2'h0, _GEN_2};
+      : _GEN_2 ? 3'h1 : {1'h0, _GEN_4, 1'h0};
   assign io_ctrl_alu_op =
     _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9 | _cs_T_11 | _cs_T_13 | _cs_T_15
     | _cs_T_17
@@ -139,12 +129,14 @@ module Decoder(
                                                                           ? 4'h8
                                                                           : _cs_T_53
                                                                               ? 4'h9
-                                                                              : _GEN_5
+                                                                              : _GEN_4
                                                                                   ? 4'h0
                                                                                   : 4'hF;
+  assign io_ctrl_fu_sel =
+    {_cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9 | _GEN_8, 1'h0};
   assign io_ctrl_branch_type =
     _cs_T_1 | _cs_T_3 | _cs_T_5 | _cs_T_7 | _cs_T_9 | _cs_T_11 | _cs_T_13 | _cs_T_15
-    | _GEN_11
+    | _GEN_10
       ? 3'h0
       : _cs_T_59
           ? 3'h1
@@ -152,9 +144,9 @@ module Decoder(
               ? 3'h2
               : _cs_T_63
                   ? 3'h3
-                  : _cs_T_65 ? 3'h5 : _cs_T_67 ? 3'h4 : _cs_T_69 ? 3'h6 : {3{_GEN_4}};
-  assign io_ctrl_mem_en = |cs_10;
-  assign io_ctrl_mem_rw = cs_10 == 2'h2;
+                  : _cs_T_65 ? 3'h5 : _cs_T_67 ? 3'h4 : _cs_T_69 ? 3'h6 : {3{_GEN_3}};
+  assign io_ctrl_mem_en = |cs_11;
+  assign io_ctrl_mem_rw = cs_11 == 2'h2;
   assign io_ctrl_mem_type =
     _cs_T_1
       ? 3'h3
@@ -166,23 +158,18 @@ module Decoder(
                   ? 3'h1
                   : _cs_T_9 ? 3'h4 : _cs_T_11 ? 3'h3 : _cs_T_13 ? 3'h2 : {2'h0, _cs_T_15};
   assign io_ctrl_wb_sel =
-    _GEN_10
-      ? 2'h2
-      : _GEN_9 ? 2'h0 : _GEN_11 ? 2'h1 : _GEN_7 ? 2'h0 : _GEN_4 ? 2'h3 : {1'h0, _GEN_2};
+    _GEN_9 ? 2'h2 : _GEN_8 ? 2'h0 : _GEN_10 ? 2'h1 : _GEN_6 ? 2'h0 : {2{_GEN_3}};
   assign io_ctrl_reg_write =
-    _GEN_10 | ~_GEN_9
-    & (_GEN_11 | ~_GEN_7
-       & (_cs_T_71 | _cs_T_73 | _cs_T_75 | _cs_T_77 | _cs_T_79 | _cs_T_81 | _cs_T_83
-          | _cs_T_85 | _cs_T_87 | _cs_T_618));
+    _GEN_9 | ~_GEN_8 & (_GEN_10 | ~_GEN_6 & (_cs_T_71 | _cs_T_434));
   assign io_ctrl_imm_type =
-    _GEN_10
+    _GEN_9
       ? 3'h1
-      : _GEN_9
+      : _GEN_8
           ? 3'h2
-          : _GEN_6
+          : _GEN_5
               ? 3'h1
-              : _GEN_3
+              : _GEN_2
                   ? 3'h0
-                  : _GEN_8 ? 3'h4 : _GEN_7 ? 3'h3 : _cs_T_71 ? 3'h5 : {2'h0, _cs_T_73};
+                  : _GEN_7 ? 3'h4 : _GEN_6 ? 3'h3 : _cs_T_71 ? 3'h5 : {2'h0, _cs_T_434};
 endmodule
 

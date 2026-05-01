@@ -57,12 +57,9 @@ class DecodeStage(implicit config: CoreConfig) extends Module {
   next.wb_sel := decoder.io.ctrl.wb_sel
   next.reg_write := decoder.io.ctrl.reg_write
 
-  if (config.pipelineStages == 1) {
-    io.idex := next
+  io.idex := (if (config.pipelineStages == 1) {
+    next
   } else {
-    val reg = RegInit(0.U.asTypeOf(new IDEXBundle))
-    when(io.flush) { reg.valid := false.B }
-    .elsewhen(!io.stall) { reg := next }
-    io.idex := reg
-  }
+    PipelineConnect.withEmbeddedValid(next, io.stall, io.flush)
+  })
 }

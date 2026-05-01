@@ -13,9 +13,9 @@ ENTRY = "rvtest_entry_point"
 
 # Required paths 必要路径
 RISCV_ARCH_TEST = Path("../../riscv-arch-test")
-DUT_CONFIG = Path("./rv32i")
-HDL = Path("./rv32i_sim/HDL")
-VERILATOR_CPP = Path("./rv32i_sim/verilator_cpp")
+DUT_CONFIG = Path("./NeoRV32")
+HDL = Path("./NeoRV32_sim/HDL")
+VERILATOR_CPP = Path("./NeoRV32_sim/verilator_cpp")
 
 
 def main():

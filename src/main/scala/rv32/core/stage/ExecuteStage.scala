@@ -15,6 +15,9 @@ class ExecuteStageIO(implicit config: CoreConfig) extends Bundle {
   val pc_target = Output(UInt(32.W))
   val pc_take = Output(Bool())
 
+  // MulDiv ready signal (for pipeline stall detection)
+  val muldiv_ready = Output(Bool())
+
   // Forwarding inputs for 5-stage pipeline
   val forward_a = Input(UInt(2.W))
   val forward_b = Input(UInt(2.W))
@@ -94,6 +97,13 @@ class ExecuteStage(implicit config: CoreConfig) extends Module {
   io.pc_target := Mux(io.idex.op1_sel === OP1_RS1, jalr_target, pc_plus_imm)
   io.pc_take := branch_taken
 
+  // Expose MulDiv ready signal
+  io.muldiv_ready := (if (config.useM) {
+    muldiv.get.io.ready
+  } else {
+    true.B  // Always ready when M extension disabled
+  })
+
   val next = Wire(new EXMEMBundle)
   next.pc := io.idex.pc
   next.inst := io.idex.inst
@@ -101,18 +111,16 @@ class ExecuteStage(implicit config: CoreConfig) extends Module {
   next.rd_addr := io.idex.rd_addr
   next.alu_result := exec_result
   next.rs2_data := rs2_fwd  // Use forwarded rs2 for store data
+  next.fu_sel := io.idex.fu_sel
   next.mem_en := io.idex.mem_en
   next.mem_rw := io.idex.mem_rw
   next.mem_type := io.idex.mem_type
   next.wb_sel := io.idex.wb_sel
   next.reg_write := io.idex.reg_write
 
-  if (config.pipelineStages == 1) {
-    io.exmem := next
+  io.exmem := (if (config.pipelineStages == 1) {
+    next
   } else {
-    val reg = RegInit(0.U.asTypeOf(new EXMEMBundle))
-    when(io.flush) { reg.valid := false.B }
-    .elsewhen(!io.stall) { reg := next }
-    io.exmem := reg
-  }
+    PipelineConnect.withEmbeddedValid(next, io.stall, io.flush)
+  })
 }

@@ -34,6 +34,25 @@ object PipelineConnect {
     dataReg
   }
 
+  // Pipeline register for bundles with embedded valid signal
+  // Matches the pattern used in stage modules: clears entire bundle on flush, updates when not stalled
+  def withEmbeddedValid[T <: Data](
+    data: T,
+    stall: Bool,
+    flush: Bool
+  ): T = {
+    val dataReg = RegInit(0.U.asTypeOf(data.cloneType))
+
+    when(flush) {
+      // Clear entire bundle (including valid field)
+      dataReg := 0.U.asTypeOf(data.cloneType)
+    }.elsewhen(!stall) {
+      dataReg := data
+    }
+
+    dataReg
+  }
+
   // Create a pipeline register for valid signal
   // Returns the registered valid output
   def validReg(

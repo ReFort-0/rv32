@@ -29,9 +29,7 @@ class FetchStage(implicit config: CoreConfig) extends Module {
   io.inst_req.mask := 0.U
   io.inst_req.valid := !io.stall
 
-  when(io.flush) {
-    pc_reg := io.pc_next
-  }.elsewhen(io.pc_we) {
+  when(io.flush || io.pc_we) {
     pc_reg := io.pc_next
   }.elsewhen(!io.stall) {
     pc_reg := pc_reg + 4.U

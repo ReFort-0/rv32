@@ -45,6 +45,7 @@ module NeoRV32Core(
   wire [1:0]  _decode_io_idex_op1_sel;
   wire [2:0]  _decode_io_idex_op2_sel;
   wire [3:0]  _decode_io_idex_alu_op;
+  wire [1:0]  _decode_io_idex_fu_sel;
   wire [2:0]  _decode_io_idex_branch_type;
   wire        _decode_io_idex_mem_en;
   wire        _decode_io_idex_mem_rw;
@@ -86,6 +87,7 @@ module NeoRV32Core(
     .io_idex_op1_sel     (_decode_io_idex_op1_sel),
     .io_idex_op2_sel     (_decode_io_idex_op2_sel),
     .io_idex_alu_op      (_decode_io_idex_alu_op),
+    .io_idex_fu_sel      (_decode_io_idex_fu_sel),
     .io_idex_branch_type (_decode_io_idex_branch_type),
     .io_idex_mem_en      (_decode_io_idex_mem_en),
     .io_idex_mem_rw      (_decode_io_idex_mem_rw),
@@ -94,6 +96,8 @@ module NeoRV32Core(
     .io_idex_reg_write   (_decode_io_idex_reg_write)
   );
   ExecuteStage execute (
+    .clock               (clock),
+    .reset               (reset),
     .io_idex_pc          (_decode_io_idex_pc),
     .io_idex_valid       (_decode_io_idex_valid),
     .io_idex_rd_addr     (_decode_io_idex_rd_addr),
@@ -103,6 +107,7 @@ module NeoRV32Core(
     .io_idex_op1_sel     (_decode_io_idex_op1_sel),
     .io_idex_op2_sel     (_decode_io_idex_op2_sel),
     .io_idex_alu_op      (_decode_io_idex_alu_op),
+    .io_idex_fu_sel      (_decode_io_idex_fu_sel),
     .io_idex_branch_type (_decode_io_idex_branch_type),
     .io_idex_mem_en      (_decode_io_idex_mem_en),
     .io_idex_mem_rw      (_decode_io_idex_mem_rw),
@@ -123,6 +128,8 @@ module NeoRV32Core(
     .io_pc_take          (_execute_io_pc_take)
   );
   MemoryStage memory (
+    .clock               (clock),
+    .reset               (reset),
     .io_exmem_pc         (_execute_io_exmem_pc),
     .io_exmem_valid      (_execute_io_exmem_valid),
     .io_exmem_rd_addr    (_execute_io_exmem_rd_addr),

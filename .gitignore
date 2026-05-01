@@ -349,5 +349,5 @@ CLAUDE.md
 
 /verilog
 
-/ACT4/rv32i_sim/verilator_cpp/obj_dir
+/ACT4/NeoRV32_sim/verilator_cpp/obj_dir/
 /ACT4/waves

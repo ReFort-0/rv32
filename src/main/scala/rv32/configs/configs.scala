@@ -18,6 +18,10 @@ case class CoreConfig(
     "Pipeline stages must be 1, 3, or 5")
   require(xlen == 32, "Only RV32 is supported")
 
+  // Additional validation
+  require(xlen > 0 && xlen <= 64, s"xlen must be between 1 and 64, got $xlen")
+  require(pipelineStages > 0, s"pipelineStages must be positive, got $pipelineStages")
+
   def numRegs: Int = if (useRV32E) 16 else 32
   // def regAddrWidth: Int = if (useRV32E) 4 else 5
   //(RV32E和RV32I的GPR都是5位地址)
@@ -28,7 +32,11 @@ case class SoCConfig(
   enableTimer: Boolean = false,
   enableGPIO: Boolean = false,
   onChipRAMSize: Int = 4 * 1024
-)
+) {
+  require(onChipRAMSize > 0, s"onChipRAMSize must be positive, got $onChipRAMSize")
+  require(onChipRAMSize % 4 == 0, s"onChipRAMSize must be 4-byte aligned, got $onChipRAMSize")
+  require(onChipRAMSize <= 1024 * 1024, s"onChipRAMSize too large: $onChipRAMSize bytes")
+}
 
 // Combined configuration
 case class NeoRV32Config(core: CoreConfig, soc: SoCConfig)

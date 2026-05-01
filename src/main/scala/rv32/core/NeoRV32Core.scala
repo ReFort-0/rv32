@@ -106,8 +106,9 @@ class NeoRV32Core(implicit config: CoreConfig) extends Module {
 
     // Detect load-use hazard: if ID/EX stage has load and next instruction needs that register
     val load_in_idex = execute.io.idex.mem_en && !execute.io.idex.mem_rw
-    val rs1_addr = decode.io.idex.rs1_addr
-    val rs2_addr = decode.io.idex.rs2_addr
+    // Extract rs1/rs2 from current instruction being decoded (not from previous instruction)
+    val rs1_addr = decode.io.ifid.inst(19, 15)
+    val rs2_addr = decode.io.ifid.inst(24, 20)
 
     val load_use_hazard_3stage = load_in_idex &&
                                   execute.io.idex.reg_write &&
@@ -116,16 +117,28 @@ class NeoRV32Core(implicit config: CoreConfig) extends Module {
                                   ((rs1_addr === execute.io.idex.rd_addr) ||
                                    (rs2_addr === execute.io.idex.rd_addr))
 
-    // Stall IF and ID/EX on load-use hazard
-    fetch.io.stall := load_use_hazard_3stage
-    decode.io.stall := load_use_hazard_3stage
-    execute.io.stall := load_use_hazard_3stage
+    // Detect MulDiv stall: division in progress in ID/EX stage
+    val muldiv_stall = if (config.useM) {
+      !execute.io.muldiv_ready &&
+      execute.io.idex.valid &&
+      (execute.io.idex.fu_sel === FU_MULDIV)
+    } else {
+      false.B
+    }
+
+    // Combine stalls
+    val combined_stall_3stage = load_use_hazard_3stage || muldiv_stall
+
+    // Stall IF and ID/EX on load-use hazard or MulDiv stall
+    fetch.io.stall := combined_stall_3stage
+    decode.io.stall := combined_stall_3stage
+    execute.io.stall := combined_stall_3stage
     memory.io.stall := false.B
     writeback.io.stall := false.B
 
     // Flush on branch taken
     decode.io.flush := pc_take
-    execute.io.flush := pc_take || load_use_hazard_3stage
+    execute.io.flush := pc_take || load_use_hazard_3stage  // Don't flush on muldiv_stall
     memory.io.flush := false.B
 
   } else if (config.pipelineStages == 5) {
@@ -145,11 +158,20 @@ class NeoRV32Core(implicit config: CoreConfig) extends Module {
     hazard.io.wb_rd_addr := writeback.io.wb_rd_addr
     hazard.io.wb_reg_write := writeback.io.wb_reg_write
 
+    // Detect MulDiv stall: division in progress in EX stage
+    val muldiv_stall = if (config.useM) {
+      !execute.io.muldiv_ready &&
+      execute.io.exmem.valid &&
+      (execute.io.exmem.fu_sel === FU_MULDIV)
+    } else {
+      false.B
+    }
+
     // Apply stall signals
-    fetch.io.stall := hazard.io.stall_if
-    decode.io.stall := hazard.io.stall_id
-    execute.io.stall := false.B
-    memory.io.stall := false.B
+    fetch.io.stall := hazard.io.stall_if || muldiv_stall
+    decode.io.stall := hazard.io.stall_id || muldiv_stall
+    execute.io.stall := muldiv_stall
+    memory.io.stall := muldiv_stall  // Prevent MEM stage from overwriting result
     writeback.io.stall := false.B
 
     // Apply flush signals

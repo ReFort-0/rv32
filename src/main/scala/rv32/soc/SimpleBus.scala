@@ -54,6 +54,16 @@ class SimpleBusDemuxIO(nSlaves: Int)(implicit config: CoreConfig) extends Bundle
 class SimpleBusDemux(nSlaves: Int)(implicit config: CoreConfig) extends Module {
   val io = IO(new SimpleBusDemuxIO(nSlaves))
 
+  // Track unmapped address access
+  val unmapped_req = RegInit(false.B)
+  val anyHit = io.addrRanges.map(r => io.master.req.addr >= r.start && io.master.req.addr < r.end).reduce(_ || _)
+
+  when(io.master.req.valid && !anyHit) {
+    unmapped_req := true.B
+  }.elsewhen(unmapped_req) {
+    unmapped_req := false.B
+  }
+
   // Address decode
   val addrHits = io.addrRanges.map(r => io.master.req.addr >= r.start && io.master.req.addr < r.end)
 
@@ -73,6 +83,6 @@ class SimpleBusDemux(nSlaves: Int)(implicit config: CoreConfig) extends Module {
   // Use Mux1H with default value of 0 when no slave responds
   val respData = Mux(anyRespValid, Mux1H(respValid.zip(io.slaves.map(_.resp.rdata))), 0.U)
 
-  io.master.resp.valid := anyRespValid
-  io.master.resp.rdata := respData
+  io.master.resp.valid := anyRespValid || unmapped_req
+  io.master.resp.rdata := Mux(unmapped_req, 0xDEADDEADL.U, respData)
 }

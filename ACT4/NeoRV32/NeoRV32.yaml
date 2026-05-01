@@ -3,8 +3,8 @@
 $schema: config_schema.json#
 kind: architecture configuration
 type: fully configured
-name: rv32i
-description: The rv32i configuration of RV32I;
+name: NeoRV32
+description: The NeoRV32 configuration of RV32I;
 implemented_extensions:
   - { name: I, version: "= 2.1" }
   # - { name: A, version: "= 2.1.0" }

@@ -70,12 +70,9 @@ class MemoryStage(implicit config: CoreConfig) extends Module {
   next.wb_sel := io.exmem.wb_sel
   next.reg_write := io.exmem.reg_write
 
-  if (config.pipelineStages == 1) {
-    io.memwb := next
+  io.memwb := (if (config.pipelineStages == 1) {
+    next
   } else {
-    val reg = RegInit(0.U.asTypeOf(new MEMWBBundle))
-    when(io.flush) { reg.valid := false.B }
-    .elsewhen(!io.stall) { reg := next }
-    io.memwb := reg
-  }
+    PipelineConnect.withEmbeddedValid(next, io.stall, io.flush)
+  })
 }
